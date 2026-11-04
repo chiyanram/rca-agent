@@ -6,6 +6,9 @@ Glossary for the RCA agent. One term, one meaning.
 
 - **Incident** — a triggering alert plus the context attached to it (service, time window, labels). The unit of work that starts an Investigation.
 - **Investigation** — one run of the agent on one Incident: gathering evidence, forming hypotheses, and producing an RCA report. Ends with an RCA report unless a human cancels or abandons it.
+- **Stage** — one step of an Investigation with a single job (Pre-fetch, Evidence, Change, Code-locator, RCA writer, Fix proposer, Open draft PR). Stages run in a fixed order set by the pipeline, never chosen by the agent. A stage that runs out of budget hands on an incomplete result with its gaps named, rather than failing the Investigation.
+- **Pre-fetch** — the first Stage: it gathers the evidence almost every Investigation needs (alert details, error log patterns, key metrics, recent changes) without asking the model.
+- **Finding** — a claim made during an Investigation together with its citations: an observability query with its time range and link, or a code location at a specific commit. Stages hand Findings forward; the RCA report may only rest on Findings already recorded.
 - **RCA report** — the output every Investigation must produce: root-cause hypothesis, supporting evidence, and suspect code locations across repos.
 - **Fix proposal** — an optional patch plus draft pull request that follows an approved RCA report. Never produced without passing a HITL gate.
 - **HITL gate** — a mandatory point in an Investigation where the agent stops and a human decides before work continues. There are two: the **RCA gate** (after the RCA report) and the **Fix gate** (after the Fix proposal, before the draft PR). A gate never approves itself; it waits.
