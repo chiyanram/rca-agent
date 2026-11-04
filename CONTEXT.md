@@ -4,7 +4,7 @@ Glossary for the RCA agent. One term, one meaning.
 
 ## Terms
 
-- **Incident** — a triggering alert plus the context attached to it (service, time window, labels). The unit of work that starts an Investigation.
+- **Incident** — a triggering alert plus the context attached to it (service, time window, labels). The unit of work that starts an Investigation. Reported either automatically by an alert or by a human who starts the Investigation themselves; a repeat of the same alert while its Investigation is open updates that Investigation instead of starting another.
 - **Investigation** — one run of the agent on one Incident: gathering evidence, forming hypotheses, and producing an RCA report. Ends with an RCA report unless a human cancels or abandons it.
 - **Stage** — one step of an Investigation with a single job (Pre-fetch, Evidence, Change, Code-locator, RCA writer, Fix proposer, Open draft PR). Stages run in a fixed order set by the pipeline, never chosen by the agent. A stage that runs out of budget hands on an incomplete result with its gaps named, rather than failing the Investigation.
 - **Pre-fetch** — the first Stage: it gathers the evidence almost every Investigation needs (alert details, error log patterns, key metrics, recent changes) without asking the model.
