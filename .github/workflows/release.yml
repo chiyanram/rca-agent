@@ -1,14 +1,15 @@
 name: Release
 
+# Runs only from "Run workflow" on main: during the dev phase a merge does not release (#48).
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ github.workflow }}-release-${{ github.ref_name }}

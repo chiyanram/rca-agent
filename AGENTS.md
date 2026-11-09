@@ -49,7 +49,7 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
 - [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`, lower case, imperative (`docs(context): add Runtime event (#32)`). Types and their release effect → `CONTRIBUTING.md`. Releases, tags and `CHANGELOG.md` come from python-semantic-release on every push to `main`; leave them to it.
 - `CONTEXT.md` and `docs/` changes go straight to `main`; research and prototypes on their own branch.
 - Several sessions share this checkout: commit only the files you changed, and leave the branch, stash and working tree as you found them.
-- **Pull before you push** (`git pull --rebase`): the release bot commits to `main` after every push.
+- **Pull before you push** (`git pull --rebase`): the release bot commits to `main` when a release is run by hand.
 - The local `commit-msg` hook is **not installed** in this shared checkout, because it would reject other sessions' commits mid-flight; a CI check lints commit messages on every push to `main` instead.
 - `CLAUDE.md` is a one-line `@AGENTS.md` import, not a symlink: imports are the documented Claude Code way and symlinks break on Windows checkouts. Edit `AGENTS.md` only.
 
