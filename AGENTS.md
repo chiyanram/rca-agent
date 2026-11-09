@@ -46,7 +46,7 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
 
 ## Commits
 
-- [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`, lower case, imperative (`docs(context): add Runtime event (#32)`). Types and their release effect → `CONTRIBUTING.md`. Releases, tags and `CHANGELOG.md` come from python-semantic-release on every push to `main`; leave them to it.
+- [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary (#ticket)`, scope required, lower case, imperative (`docs(context): add Runtime event (#32)`). Types and their release effect → `CONTRIBUTING.md`. Releases, tags and `CHANGELOG.md` come from python-semantic-release when a release is run by hand; leave them to it.
 - `CONTEXT.md` and `docs/` changes go straight to `main`; research and prototypes on their own branch.
 - Several sessions share this checkout: commit only the files you changed, and leave the branch, stash and working tree as you found them.
 - **Pull before you push** (`git pull --rebase`): the release bot commits to `main` when a release is run by hand.

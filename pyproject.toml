@@ -14,6 +14,8 @@ match = "main"
 prerelease = false
 
 [tool.semantic_release.changelog]
+# templates/ is the default Markdown set with our release-note sections (#48); only .components/changes.md.j2 changed.
+template_dir = "templates"
 mode = "update"
 insertion_flag = "<!-- version list -->"
 exclude_commit_patterns = ['''^chore\(release\):''']
