@@ -36,6 +36,7 @@ Source: [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-ag
 ### Evidence, not assertion
 - **Every claim is a cited Finding**: a query with its range and link, or code at the Deployed commit. The RCA report rests only on recorded Findings, and our code validates that. ([pipeline stages](https://github.com/chiyanram/rca-agent/issues/16))
 - **Deterministic first, model second.** What code can work out (Code facts, Log digest, Impact reach, Checks), code works out; the model cites it and never changes it. ([Code facts](https://github.com/chiyanram/rca-agent/issues/22), [Log digest](https://github.com/chiyanram/rca-agent/issues/27))
+- **Simple means computes less, never computes wrongly.** A deterministic fact may report too much (labelled `heuristic`) but never silently miss something; a tool that drops results it can't resolve is not adopted. ([Code facts](https://github.com/chiyanram/rca-agent/issues/22), [graphify prototype](https://github.com/chiyanram/rca-agent/issues/45))
 - **The Fix engine proposes, our Checks decide.** What an engine claims about its own work never counts. ([Fix checks](https://github.com/chiyanram/rca-agent/issues/12))
 - **Gaps are named, never hidden.** A budget hit yields an incomplete result with its gaps listed; an unreachable backend makes the stage `stalled`; an unknown Deployed commit is flagged.
 
