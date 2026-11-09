@@ -8,7 +8,8 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
 
 - **Map**: GitHub issue #1 (`wayfinder:map`). Its body is the low-res view: Destination, Notes, Decisions so far (one line per closed ticket), Not yet specified, Out of scope.
 - **Tickets**: sub-issues of the map, labelled `wayfinder:research|prototype|grilling|task`. Every `gh` operation → `docs/agents/issue-tracker.md`.
-- **Glossary**: `CONTEXT.md`. How to read and extend it → `docs/agents/domain.md`.
+- **Glossary**: `CONTEXT.md`, single-context. How to read and extend it → `docs/agents/domain.md`.
+- **Triage labels**: the five default roles → `docs/agents/triage-labels.md`.
 - **Research findings**: `research/<slug>.md` on branch `research/<slug>`, linked from the ticket's resolution.
 - **Prototypes**: branch `prototype/<slug>`.
 - **ADRs**: `docs/adr/`, created with the first one.
