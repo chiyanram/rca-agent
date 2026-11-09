@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Planning map
+    url: https://github.com/chiyanram/rca-agent/issues/1
+    about: Open questions and decisions so far. Check it before opening a new ticket.
+  - name: Report a security vulnerability
+    url: https://github.com/chiyanram/rca-agent/security/advisories/new
+    about: Report privately, never in a public issue.

@@ -44,10 +44,12 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
 
 ## Commits
 
-- Short imperative subject (`CONTEXT: add Runtime event (#32)`).
+- [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`, lower case, imperative (`docs(context): add Runtime event (#32)`). Types and their release effect → `CONTRIBUTING.md`. Releases, tags and `CHANGELOG.md` come from python-semantic-release on every push to `main`; leave them to it.
 - `CONTEXT.md` and `docs/` changes go straight to `main`; research and prototypes on their own branch.
 - Several sessions share this checkout: commit only the files you changed, and leave the branch, stash and working tree as you found them.
 
 ## Build phase (once the spec is assembled)
 
-Python, one `src/rca_agent` package, `uv`, FastAPI, Pydantic AI per stage. Setup, test and lint commands will be listed here when the first code lands.
+Python, one `src/rca_agent` package, `uv`, FastAPI, Pydantic AI per stage. Setup, test and lint commands will be listed here when the first code lands; the `[project]` table then joins the release config in `pyproject.toml`.
+
+Before finishing any change: `pre-commit run --all-files`.
