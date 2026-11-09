@@ -44,7 +44,7 @@ Pull-request titles follow the same format; a check enforces it, because squash 
 
 ## Releases
 
-Every push to `main` runs [python-semantic-release](https://python-semantic-release.readthedocs.io/). It reads the commits since the last tag, picks the next version (`v0.x.y` while in planning), updates [`CHANGELOG.md`](CHANGELOG.md), tags and creates a GitHub release. Nothing to do by hand.
+Releases are manual during the dev phase (#48). A push to `main` does not release. To release, open **Actions → Release → Run workflow** on `main`, or run `gh workflow run release.yml --ref main`. [python-semantic-release](https://python-semantic-release.readthedocs.io/) then reads the commits since the last tag, picks the next version (`v0.x.y` while in planning), updates [`CHANGELOG.md`](CHANGELOG.md), tags and creates a GitHub release.
 
 While the repo is in planning, almost every commit is `docs:`, so the version stays at `v0.1.x`. The PR-title check and `CODEOWNERS` only take effect once `main` is protected and changes go through pull requests; until then the commit-lint CI check on push is the gate.
 
