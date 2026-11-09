@@ -1,0 +1,39 @@
+name: Commit messages
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  conventional:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check pushed commits follow Conventional Commits
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          pattern='^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: [^A-Z].+'
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            range="$AFTER -1"
+          else
+            range="$BEFORE..$AFTER"
+          fi
+          bad=0
+          while IFS= read -r line; do
+            sha=${line%% *}; subject=${line#* }
+            case "$subject" in Merge\ *) continue;; esac
+            if ! printf '%s' "$subject" | grep -Eq "$pattern"; then
+              echo "::error::$sha does not follow Conventional Commits: $subject"
+              bad=1
+            fi
+          done < <(git log --no-merges --format='%h %s' $range)
+          [ "$bad" -eq 0 ] && echo "All pushed commits follow Conventional Commits."
+          exit $bad
