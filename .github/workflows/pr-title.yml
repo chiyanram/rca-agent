@@ -1,7 +1,9 @@
 name: PR title
 
+# pull_request, as in chiyanram/skills and agent-factory: the check only reads the title, and every
+# pull_request_target run here ended in startup_failure (#51).
 on:
-  pull_request_target:
+  pull_request:
     types: [opened, edited, reopened, synchronize]
 
 permissions:

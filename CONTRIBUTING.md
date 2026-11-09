@@ -22,7 +22,33 @@ AI coding agents follow [`AGENTS.md`](AGENTS.md); people may find it a useful su
 
 ## Commit messages
 
-[Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`, imperative, lower case, no full stop.
+One format in chiyanram/skills, chiyanram/agent-factory and chiyanram/rca-agent (#51). It has the commitizen
+sections:
+
+```
+type(scope): lower-case summary (#issue)
+
+Why the change is needed, in 1–3 sentences.
+
+BREAKING CHANGE: what breaks and what to do instead
+Refs #12
+```
+
+- **Title**: a type, a required lower-case scope, an imperative lower-case summary with no full stop, and the issue as
+  `(#N)` or `(owner/repo#N)`, such as `docs(context): add Runtime event (#32)`. Add `!` after the scope for a breaking change. Only Dependabot
+  (scope `deps`) and the release commit name no issue.
+- **Body**: why, not what; the diff shows what. Optional footers: `BREAKING CHANGE:`, `Closes #N` to close the issue on
+  merge, and `Refs #N` for other issues.
+- **No tool or co-author lines**: no `Co-Authored-By`, no "Generated with" line.
+
+Pull requests are squash-merged. The commit on `main` is the **PR title** (GitHub adds `(#pr)`) and the **PR
+description** as its body, so write the description as the commit body. The branch commits are dropped, so they can be
+anything. CI checks the PR title. Commits pushed straight to `main` (glossary and docs) follow the same format, and a CI check
+on push to `main` enforces it.
+
+To get the prompts, install [commitizen](https://commitizen-tools.github.io/commitizen/) once (`pipx install
+commitizen`) and run `cz commit`. `.cz.toml` holds the prompts; it is the same file in all three repos. commitizen only
+writes the message: semantic-release still cuts the releases.
 
 | Type | Use for | Release effect |
 |---|---|---|
@@ -32,15 +58,11 @@ AI coding agents follow [`AGENTS.md`](AGENTS.md); people may find it a useful su
 | `refactor`, `perf`, `test` | code changes without new behaviour | none (`perf`: patch) |
 | `build`, `ci`, `chore` | tooling, workflows, housekeeping | none |
 
-The scope is required. A breaking change adds `!` after the scope (`feat(api)!: …`) or a `BREAKING CHANGE:` footer. Name the ticket at the end of the summary: `docs(context): add Runtime event (#32)`, or `(chiyanram/skills#276)` for another repo. Only Dependabot (scope `deps`) and the release commit name no ticket. chiyanram/skills and chiyanram/agent-factory use the same rule (#48).
-
 Install the commit-message check once per personal clone (not in a checkout shared by several agent sessions: there the CI check on push does this job):
 
 ```bash
 pipx install pre-commit && pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```
-
-Pull-request titles follow the same format; a check enforces it, because squash merges use the title as the commit. The CI check on push to `main` enforces it for direct commits.
 
 ## Releases
 
