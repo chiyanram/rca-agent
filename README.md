@@ -33,11 +33,38 @@ flowchart LR
 
 Target services: Java (Spring or Micronaut, Gradle or Maven) on Azure, including Azure Functions, built with GitHub Actions or GitLab CI.
 
-## Design principles
+## Principles
 
-- [12-factor agents](https://github.com/humanlayer/12-factor-agents): own the prompts, context and control flow; small focused agents; pause and resume.
-- [AG-UI](https://docs.ag-ui.com/introduction) as the human-in-the-loop surface.
-- An append-only event log is the source of truth and the audit trail.
+The full list, each linked to the ticket that decided it, is in **[docs/principles.md](docs/principles.md)**. In short:
+
+| | Principle |
+|---|---|
+| 🧭 | **[12-factor agents](https://github.com/humanlayer/12-factor-agents)**: we own prompts, context and control flow; small focused agents; pause and resume at gates |
+| 🙋 | **Humans decide**: two mandatory gates, no auto-merge, and the agent never changes production directly |
+| 🔎 | **Evidence, not assertion**: every claim is a cited Finding; what code can compute, code computes |
+| 🛡️ | **Everything read is data, not instructions**: redaction at ingestion, least-privilege tokens minted late |
+| 🔌 | **Neutral by design**: any model provider, any supported observability or source-control backend |
+| 📏 | **Graded, not guessed**: seeded faults with hidden answer keys, and capped spend |
+
+## Key decisions
+
+Architecture decision records in [`docs/adr/`](docs/adr/):
+
+| ADR | Decision |
+|---|---|
+| [0001](docs/adr/0001-own-pipeline-small-agent-per-stage.md) | Our own pipeline, with one small Pydantic AI agent per Stage |
+| [0002](docs/adr/0002-event-log-is-the-source-of-truth.md) | The append-only event log is the source of truth and the audit trail |
+| [0003](docs/adr/0003-operator-always-starts-an-investigation.md) | An Operator always starts an Investigation; alerts never do |
+| [0004](docs/adr/0004-agent-never-changes-production-directly.md) | The agent never changes production directly |
+| [0005](docs/adr/0005-provider-neutral-models.md) | Models are provider-neutral; nothing hard-depends on Claude |
+
+Every other decision is one line in the map's *Decisions so far*, linked to its ticket.
+
+## How to follow the planning
+
+1. Open the [planning map](https://github.com/chiyanram/rca-agent/issues/1): **Decisions so far** is what is settled, **Not yet specified** is what is still open.
+2. Each line links a closed ticket whose last comment is the full resolution.
+3. Open tickets are the frontier; unassigned ones with no open blockers can be picked up (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 ## Planned stack
 
@@ -49,8 +76,10 @@ Python · Pydantic AI (one small agent per stage) · FastAPI · Postgres · AG-U
 |---|---|
 | [`CONTEXT.md`](CONTEXT.md) | Glossary: one term, one meaning |
 | [`AGENTS.md`](AGENTS.md) | Instructions for AI coding agents (`CLAUDE.md` imports it) |
+| [`docs/principles.md`](docs/principles.md) | The rules every design decision follows |
+| [`docs/adr/`](docs/adr/) | Architecture decision records for hard-to-reverse choices |
 | [`docs/agents/`](docs/agents/) | Issue-tracker workflow, triage labels, domain-doc rules |
-| `docs/adr/` | Architecture decision records (created with the first one) |
+| [`CHANGELOG.md`](CHANGELOG.md) | Release notes, generated from commits |
 | `research/*` branches | Research findings, one branch per ticket |
 | `prototype/*` branches | Throwaway prototypes |
 

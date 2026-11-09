@@ -12,7 +12,8 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
 - **Triage labels**: the five default roles → `docs/agents/triage-labels.md`.
 - **Research findings**: `research/<slug>.md` on branch `research/<slug>`, linked from the ticket's resolution.
 - **Prototypes**: branch `prototype/<slug>`.
-- **ADRs**: `docs/adr/`, created with the first one.
+- **Principles**: `docs/principles.md`. Check every proposal and recommended answer against it; one that breaks a principle says so and names which.
+- **ADRs**: `docs/adr/`, for hard-to-reverse decisions (format → `docs/agents/domain.md`).
 - **Local drafts**: `.scratch/` (git-ignored).
 
 ## Working a ticket
@@ -28,7 +29,7 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
    - one Decisions-so-far line appended to the map, just before `## Not yet specified` (re-fetch the body right before editing: other sessions edit it concurrently);
    - inputs posted on dependent open tickets;
    - new tickets created, attached to the map and wired with blocking edges;
-   - settled terms in `CONTEXT.md`, committed and pushed.
+   - settled terms in `CONTEXT.md`; a new standing rule in `docs/principles.md`; a hard-to-reverse decision as an ADR — all committed and pushed.
 
 ## Writing for the user
 

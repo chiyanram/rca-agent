@@ -1,0 +1,5 @@
+# Models are provider-neutral; nothing hard-depends on Claude
+
+Every model is a configured Connection chosen per Stage in the Agent version, and every step, gate and tool is owned by our code, so the agent runs on any provider with good tool calling. The MVP supports Claude through the Anthropic API (testing) and GitHub Copilot as a model provider (work), with Azure OpenAI and others reachable through Pydantic AI. We chose this because Claude may not be approved where the agent is used; the price is that we cannot lean on vendor-specific agent features (for example Claude Code as the whole agent) and must evaluate every Agent version on the providers it will run on. There is no automatic switching between models or providers: a failing call retries, then the Stage is `stalled`.
+
+Decided in [LLM providers and coding engines when Claude is unavailable](https://github.com/chiyanram/rca-agent/issues/25) and [Which LLM providers and coding engines must the MVP support, and how is a model chosen?](https://github.com/chiyanram/rca-agent/issues/26).
