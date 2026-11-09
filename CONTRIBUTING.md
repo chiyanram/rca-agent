@@ -34,7 +34,7 @@ AI coding agents follow [`AGENTS.md`](AGENTS.md); people may find it a useful su
 
 A breaking change adds `!` after the type (`feat!: …`) or a `BREAKING CHANGE:` footer. Reference the ticket in the summary or footer: `docs(context): add Runtime event (#32)`.
 
-Install the commit-message check once per clone:
+Install the commit-message check once per personal clone (not in a checkout shared by several agent sessions: there the CI check on push does this job):
 
 ```bash
 pipx install pre-commit && pre-commit install --hook-type pre-commit --hook-type commit-msg
@@ -45,6 +45,12 @@ Pull-request titles follow the same format; a check enforces it, because squash 
 ## Releases
 
 Every push to `main` runs [python-semantic-release](https://python-semantic-release.readthedocs.io/). It reads the commits since the last tag, picks the next version (`v0.x.y` while in planning), updates [`CHANGELOG.md`](CHANGELOG.md), tags and creates a GitHub release. Nothing to do by hand.
+
+While the repo is in planning, almost every commit is `docs:`, so the version stays at `v0.1.x`. The PR-title check and `CODEOWNERS` only take effect once `main` is protected and changes go through pull requests; until then the commit-lint CI check on push is the gate.
+
+## Agent instruction files
+
+`AGENTS.md` follows the shape common to well-rated open-source repos: overview → where things are → commands → style → testing → commits → boundaries → pointers. It is kept under ~200 lines (the surveyed median was about 175) and points to `CONTRIBUTING.md`, `CONTEXT.md` and `docs/` rather than copying them. `CLAUDE.md` only imports it.
 
 ## Security
 

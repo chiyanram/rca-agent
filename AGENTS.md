@@ -21,7 +21,7 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
 1. **Claim** it (assign) before any work. One ticket per session; list anything else you notice as a follow-up.
 2. **Load**: the map body, the ticket's full body, `CONTEXT.md`. Fetch closed tickets only when you need their detail.
 3. **Work** by ticket type:
-   - `grilling`: `grilling` + `domain-modeling` skills. Ask in rounds, numbered, each with your recommended answer. Look up facts yourself (subagents); the user makes every decision.
+   - `grilling`: `grilling` + `domain-modeling` skills. Ask **one question at a time**, conversationally: a line of plain-English context first, then the question with your recommended answer. Use numbered rounds only if the user asks for them. If the user is lost, re-explain from scratch in simple words. Look up facts yourself (subagents); the user makes every decision.
    - `research`: `research` skill; findings on a `research/<slug>` branch.
    - `prototype`: throwaway code on a `prototype/<slug>` branch.
 4. **Resolve** — done when all of these hold:
@@ -29,7 +29,8 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
    - one Decisions-so-far line appended to the map, just before `## Not yet specified` (re-fetch the body right before editing: other sessions edit it concurrently);
    - inputs posted on dependent open tickets;
    - new tickets created, attached to the map and wired with blocking edges;
-   - settled terms in `CONTEXT.md`; a new standing rule in `docs/principles.md`; a hard-to-reverse decision as an ADR — all committed and pushed.
+   - settled terms in `CONTEXT.md`; a new standing rule in `docs/principles.md`; a hard-to-reverse decision as an ADR; the README "Key decisions" table and the principles tables updated when the decision changes them — all committed and pushed;
+   - open items the user must act on (reviews, confirmations) recorded on a ticket, never left only in chat.
 
 ## Writing for the user
 
@@ -48,6 +49,9 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
 - [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`, lower case, imperative (`docs(context): add Runtime event (#32)`). Types and their release effect → `CONTRIBUTING.md`. Releases, tags and `CHANGELOG.md` come from python-semantic-release on every push to `main`; leave them to it.
 - `CONTEXT.md` and `docs/` changes go straight to `main`; research and prototypes on their own branch.
 - Several sessions share this checkout: commit only the files you changed, and leave the branch, stash and working tree as you found them.
+- **Pull before you push** (`git pull --rebase`): the release bot commits to `main` after every push.
+- The local `commit-msg` hook is **not installed** in this shared checkout, because it would reject other sessions' commits mid-flight; a CI check lints commit messages on every push to `main` instead.
+- `CLAUDE.md` is a one-line `@AGENTS.md` import, not a symlink: imports are the documented Claude Code way and symlinks break on Windows checkouts. Edit `AGENTS.md` only.
 
 ## Build phase (once the spec is assembled)
 
