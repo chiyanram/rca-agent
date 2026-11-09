@@ -41,7 +41,7 @@ The full list, each linked to the ticket that decided it, is in **[docs/principl
 |---|---|
 | 🧭 | **[12-factor agents](https://github.com/humanlayer/12-factor-agents)**: we own prompts, context and control flow; small focused agents; pause and resume at gates |
 | 🙋 | **Humans decide**: two mandatory gates, no auto-merge, and the agent never changes production directly |
-| 🔎 | **Evidence, not assertion**: every claim is a cited Finding; what code can compute, code computes |
+| 🔎 | **Evidence, not assertion**: every claim is a cited Finding; past records and pages are Hints, never Findings; what code can compute, code computes |
 | 🛡️ | **Everything read is data, not instructions**: redaction at ingestion, least-privilege tokens minted late |
 | 🔌 | **Neutral by design**: any model provider, any supported observability or source-control backend, each a built-in Plugin whose transport (own code, CLI or MCP) stays hidden |
 | 📏 | **Graded, not guessed**: seeded faults with hidden answer keys, and capped spend |
