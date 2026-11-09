@@ -1,0 +1,10 @@
+{"spring-petclinic": {"build_s": 6.9},
+ "sample-micronaut-microservices": {"build_s": 2.2},
+ "azure-functions-samples-java": {"build_s": 2.1},
+ "update": {"graphify extract (incremental, 8 of 71 files re-extracted)": 3.0,
+            "graphify update --no-cluster (drops built_at_commit from graph.json)": 3.1},
+ "notes": {"network": "env -i, no API keys, --code-only: no LLM call; HOME redirected and stayed empty; nothing written into the repos",
+           "query log": "0.9.104: off unless GRAPHIFY_QUERY_LOG(_ENABLE) set; set GRAPHIFY_QUERY_LOG_DISABLE=1 anyway",
+           "assistant hooks": "none needed: CLI 'graphify extract --code-only --out DIR' and Python 'graphify.extract/build_from_json' work standalone; '<x> install' commands are opt-in",
+           "cross-repo": "merge-graphs binds Java member calls whose receiver type lives in another repo (shared library); no HTTP/topic edges",
+           "SCIP ingest": "skeleton module, not wired to CLI (no type-resolved Java path yet)"}}

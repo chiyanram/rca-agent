@@ -1,0 +1,35 @@
+fact                                   repo                            result            detail
+------------------------------------------------------------------------------------------------------------------------
+a. frame -> method                     spring-petclinic                exact             PetController.java:199 updatePetDetails -> graph .updatePetDetails() @L194; truth updatePetDetails(Owner,Pet) @L194
+a. frame -> method                     spring-petclinic                exact             PetController.java:172 processUpdateForm -> graph .processUpdateForm() @L148; truth processUpdateForm(...), decl incl. annotation @L148
+a. frame -> method                     spring-petclinic                exact             PetController.java:74 lambda$findOwner$0 -> graph .findOwner() @L71; truth findOwner lambda, decl incl. annotation @L71
+a. frame -> method                     spring-petclinic                name only         Owner.java:131 getPet -> graph .getPet() @L120; truth getPet(Integer) @L129 (overload 2 of 3)
+a. frame -> method                     spring-petclinic                gap               graph keeps start line only, no end line, no params: overloads share one node, so 'which overload' and 'is the line inside this method' are not answerable
+a. same-method last assignment         spring-petclinic                not in graph      graph has no statement/local-variable nodes (0 non-method nodes in PetController); truth: existingPet assigned L197 = owner.getPet(id) -> ours (tree-sitter on the method body)
+b. logged error sites                  spring-petclinic                1/1 sites         graph parks Logger.error/warn as unresolved_calls (file+line, no message template); missed: []
+b. logged error sites                  sample-micronaut-microservices  n/a               graph parks Logger.error/warn as unresolved_calls (file+line, no message template); missed: []
+b. logged error sites                  azure-functions-samples-java    0/1 sites         graph parks Logger.error/warn as unresolved_calls (file+line, no message template); missed: [('spring-cloud/src/main/java/example/uppercase/UppercaseHandler.java', 33)]
+b. logged error sites                  -                               ours              template -> site match (fixed part of message inside logger class) needs the string literal; graph drops it
+f. callers name+arity                  spring-petclinic                overloads merged  Owner.getPet has 3 overloads in source, 1 node in graph
+f. callers name+arity                  spring-petclinic                recall 14/16      graph callers 14 ({'EXTRACTED': 2, 'INFERRED': 12}); call sites by regex 16; arity-1 sites 13; graph cannot tell arity 1 from 2, so a walk from getPet(Integer) over-reports 3 arity-2 sites; missed: [('src/test/java/org/springframework/samples/petclinic/service/ClinicServiceTests.java', 202), ('src/test/java/org/springframework/samples/petclinic/service/ClinicServiceTests.java', 312)]
+f. EXTRACTED vs INFERRED calls         spring-petclinic                23% EXTRACTED     {'EXTRACTED': 59, 'INFERRED': 195}; EXTRACTED = same-class/receiver-known, INFERRED = name match across files
+f. EXTRACTED vs INFERRED calls         sample-micronaut-microservices  12% EXTRACTED     {'EXTRACTED': 3, 'INFERRED': 21}; EXTRACTED = same-class/receiver-known, INFERRED = name match across files
+f. EXTRACTED vs INFERRED calls         azure-functions-samples-java    40% EXTRACTED     {'EXTRACTED': 14, 'INFERRED': 21}; EXTRACTED = same-class/receiver-known, INFERRED = name match across files
+e. route methods                       spring-petclinic                18/19 flagged     annotation presence kept as 'attribute' edge; route path strings in graph: 0 -> path template + class-level prefix are ours; missed: [('src/main/java/org/springframework/samples/petclinic/owner/VisitController.java', 'id')]
+e. route methods                       sample-micronaut-microservices  20/20 flagged     annotation presence kept as 'attribute' edge; route path strings in graph: 6 -> path template + class-level prefix are ours; missed: []
+e. DI: injected bean call              sample-micronaut-microservices  no                DepartmentController -> EmployeeClient.findByDepartment: []; name-matched targets: []
+e. DI: injected bean call (no lambda)  sample-micronaut-microservices  yes               OrganizationController -> DepartmentClient.findByOrganization: [('INFERRED', 'L53')]
+g. HTTP client -> server endpoint      sample-micronaut-microservices  no (ours)         @Client(id=employee-service) @Get(/department/{id}) -> EmployeeController @Get same path: no edge; needs annotation values + Service registry
+e. interface -> impl links             spring-petclinic                partial           type-level only {'implements': 5, 'inherits': 11}; method-level dispatch is ours (name+arity over implements)
+e. @FunctionName entry points          azure-functions-samples-java    49/49 flagged     missed: []
+e. trigger kind + function name        azure-functions-samples-java    missing           parameter @*Trigger annotations in graph: none; @FunctionName("...") values: none -> trigger type, route, queue/topic name are ours
+ops: build                             spring-petclinic                6.9 s             681 nodes, 1542 edges, graph.json 806 KB, 50 .java; built_at_commit=f84ff56f31; graphify 0.9.104
+ops: build                             sample-micronaut-microservices  2.2 s             279 nodes, 555 edges, graph.json 315 KB, 25 .java; built_at_commit=8547313906; graphify 0.9.104
+ops: build                             azure-functions-samples-java    2.1 s             336 nodes, 637 edges, graph.json 374 KB, 35 .java; built_at_commit=8d0e26d61c; graphify 0.9.104
+ops: incremental after 1 commit        spring-petclinic                3.0 s             graphify extract (incremental, 8 of 71 files re-extracted)
+ops: incremental after 1 commit        spring-petclinic                3.1 s             graphify update --no-cluster (drops built_at_commit from graph.json)
+ops: network                           -                                                 env -i, no API keys, --code-only: no LLM call; HOME redirected and stayed empty; nothing written into the repos
+ops: query log                         -                                                 0.9.104: off unless GRAPHIFY_QUERY_LOG(_ENABLE) set; set GRAPHIFY_QUERY_LOG_DISABLE=1 anyway
+ops: assistant hooks                   -                                                 none needed: CLI 'graphify extract --code-only --out DIR' and Python 'graphify.extract/build_from_json' work standalone; '<x> install' commands are opt-in
+ops: cross-repo                        -                                                 merge-graphs binds Java member calls whose receiver type lives in another repo (shared library); no HTTP/topic edges
+ops: SCIP ingest                       -                                                 skeleton module, not wired to CLI (no type-resolved Java path yet)

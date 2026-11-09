@@ -1,0 +1,65 @@
+From f84ff56f3190a8f2c244bc3d927c6467c79fa045 Mon Sep 17 00:00:00 2001
+From: proto <proto@local>
+Date: Mon, 9 Nov 2026 08:53:10 +0100
+Subject: [PATCH] fix: simplify pet update
+
+---
+ .../petclinic/owner/PetController.java        | 21 +++++++++++--------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/src/main/java/org/springframework/samples/petclinic/owner/PetController.java b/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
+index 845c116..fbff6fc 100644
+--- a/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
++++ b/src/main/java/org/springframework/samples/petclinic/owner/PetController.java
+@@ -22,6 +22,8 @@ import java.util.Optional;
+ 
+ import org.springframework.dao.DataIntegrityViolationException;
+ import org.springframework.stereotype.Controller;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
+ import org.springframework.ui.ModelMap;
+ import org.springframework.util.Assert;
+ import org.springframework.util.StringUtils;
+@@ -48,6 +50,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+ @RequestMapping("/owners/{ownerId}")
+ class PetController {
+ 
++	private static final Logger log = LoggerFactory.getLogger(PetController.class);
++
+ 	private static final String VIEWS_PETS_CREATE_OR_UPDATE_FORM = "pets/createOrUpdatePetForm";
+ 
+ 	private final OwnerRepository owners;
+@@ -167,6 +171,10 @@ class PetController {
+ 		try {
+ 			updatePetDetails(owner, pet);
+ 		}
++		catch (NullPointerException ex) {
++			log.error("Failed to update pet {} for owner {}", pet.getId(), owner.getId(), ex);
++			throw ex;
++		}
+ 		catch (DataIntegrityViolationException ex) {
+ 			if (!isDuplicatePetNameViolation(ex)) {
+ 				throw ex;
+@@ -187,15 +195,10 @@ class PetController {
+ 		Integer id = pet.getId();
+ 		Assert.state(id != null, "'pet.getId()' must not be null");
+ 		Pet existingPet = owner.getPet(id);
+-		if (existingPet != null) {
+-			// Update existing pet's properties
+-			existingPet.setName(pet.getName());
+-			existingPet.setBirthDate(pet.getBirthDate());
+-			existingPet.setType(pet.getType());
+-		}
+-		else {
+-			owner.addPet(pet);
+-		}
++		// SEEDED FAULT (prototype): null check dropped
++		existingPet.setName(pet.getName());
++		existingPet.setBirthDate(pet.getBirthDate());
++		existingPet.setType(pet.getType());
+ 		this.owners.saveAndFlush(owner);
+ 	}
+ 
+-- 
+2.43.0
+
