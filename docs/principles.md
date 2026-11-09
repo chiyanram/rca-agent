@@ -31,7 +31,7 @@ Source: [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-ag
 - **No gate approves itself**, expires into approval or is skipped.
 - **The agent never touches production directly.** Restart, rollback, scale and out-of-repo config are Manual steps a human performs; the only critical Action it runs is a Recovery workflow a Setup admin confirmed ([ADR-0004](adr/0004-agent-never-changes-production-directly.md)).
 - **Manual first, automate later**: a Manual step done often becomes a confirmed Recovery workflow, run only after its own approval. ([Kubernetes profile ticket](https://github.com/chiyanram/rca-agent/issues/32))
-- **Never auto-merge, never release**: fixes open as draft pull requests for human review; tagging, releasing and deploying (hotfixes included) are always done by people. ([hotfixes](https://github.com/chiyanram/rca-agent/issues/33))
+- **Never auto-merge, never release**: fixes open as draft pull requests for human review; tagging, releasing and deploying (hotfixes included) are always done by people. The agent never pushes to a protected branch and never asks to be put on a bypass list. ([hotfixes](https://github.com/chiyanram/rca-agent/issues/33))
 
 ### Evidence, not assertion
 - **Every claim is a cited Finding**: a query with its range and link, or code at the Deployed commit. The RCA report rests only on recorded Findings, and our code validates that. ([pipeline stages](https://github.com/chiyanram/rca-agent/issues/16))
