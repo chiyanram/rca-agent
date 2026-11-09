@@ -58,6 +58,7 @@ Source: [humanlayer/12-factor-agents](https://github.com/humanlayer/12-factor-ag
 ### Measured, and bounded
 - **Graded, not guessed**: Scenarios with Answer keys the agent can never read, graded by fixed checks; a model's opinion is advisory. ([test bed](https://github.com/chiyanram/rca-agent/issues/13), [evaluation](https://github.com/chiyanram/rca-agent/issues/23))
 - **Test what production can actually do**: Seeded faults mirror the real hosting (Azure Functions), not every platform. ([Kubernetes profile ticket](https://github.com/chiyanram/rca-agent/issues/32))
+- **Test the defence, not the model**: injection results count what our code blocked, not how often the model resisted; a fixed set of injections measures the model, an adaptive attacker only gives a lower bound and never proves safety, and a text guardrail is judged by what it catches at 1% false positives, never by AUC, and never counts as a control. ([adaptive attacker](https://github.com/chiyanram/rca-agent/issues/34))
 - **Spend is capped and recorded**: $20 per Investigation, $5 per Fix run, $100 per Evaluation run; every model call is costed. No automatic model or provider switch. ([model choice](https://github.com/chiyanram/rca-agent/issues/26))
 
 ## 3. How we plan
