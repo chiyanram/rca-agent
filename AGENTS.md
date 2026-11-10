@@ -2,7 +2,7 @@
 
 Root-cause-analysis agent for Java services on Azure: Operator starts an Investigation from an alert, the agent reads logs/metrics/traces and code across repos, writes an RCA report, and after human approval opens a draft fix PR.
 
-**Status: planning.** This repo holds decisions, not code. The goal is a build-ready spec with the MVP slice marked; every session produces decisions, not deliverables.
+**Status: planning.** This repo holds decisions, not code. The goal is a build-ready spec with the v1 (laptop copy) slice marked; every session produces decisions, not deliverables.
 
 ## Where things are
 
