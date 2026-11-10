@@ -47,7 +47,7 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
 ## Commits
 
 - [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary (#ticket)`, scope required, lower case, imperative (`docs(context): add Runtime event (#32)`). Format, PR description and `cz commit` → `CONTRIBUTING.md#commit-messages`. Releases, tags and `CHANGELOG.md` come from python-semantic-release when a release is run by hand; leave them to it.
-- `CONTEXT.md` and `docs/` changes go straight to `main`; research and prototypes on their own branch.
+- `CONTEXT.md` and `docs/` changes go straight to `main`; research and prototypes on their own branch. During planning this is deliberate even though `main` now has required checks: the maintainer's account bypasses them, and the user chose to keep direct pushes for docs (2026-11-10). Code changes go through pull requests.
 - Several sessions share this checkout: commit only the files you changed, and leave the branch, stash and working tree as you found them.
 - **Pull before you push** (`git pull --rebase`): the release bot commits to `main` when a release is run by hand.
 - The local `commit-msg` hook is **not installed** in this shared checkout, because it would reject other sessions' commits mid-flight; a CI check lints commit messages on every push to `main` instead.
