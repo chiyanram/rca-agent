@@ -22,11 +22,23 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Ruleset main requires the checks; its bypass is the admin role, so the release commit is pushed with the
+      # owner's token. The GitHub Actions app cannot bypass a ruleset on a user-owned repo (chiyanram/agent-factory#350).
+      - name: The release token is set
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::Secret RELEASE_TOKEN is not set: the release commit cannot pass ruleset main. See CONTRIBUTING.md#releases."
+            exit 1
+          fi
+
       - name: Checkout release branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
 
       - name: Pin branch to the workflow commit
         run: git reset --hard ${{ github.sha }}
@@ -35,7 +47,7 @@ jobs:
         id: release
         uses: python-semantic-release/python-semantic-release@b700dbeb1f431a0fcc30a79f3f0869407fe07278 # v10.7.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.RELEASE_TOKEN }}
           git_committer_name: github-actions
           git_committer_email: actions@users.noreply.github.com
 
@@ -43,5 +55,5 @@ jobs:
         if: steps.release.outputs.released == 'true'
         uses: python-semantic-release/publish-action@99d4062dd393b5a7a62c5fe9ed78fb364b5674f2 # v10.7.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.RELEASE_TOKEN }}
           tag: ${{ steps.release.outputs.tag }}
