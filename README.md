@@ -31,6 +31,8 @@ flowchart LR
 - **Provider-neutral**: runs on any capable model provider; nothing hard-depends on one AI vendor.
 - **Graded, not guessed**: a Test bed of seeded faults with hidden answer keys measures every Agent version.
 
+**Releases:** v1 is a laptop copy anyone can run with their own logins; v2, a shared team deployment, follows only if agreed after a demo. Scope per release: [docs/releases.md](docs/releases.md).
+
 Target services: Java (Spring or Micronaut, Gradle or Maven) on Azure, including Azure Functions, built with GitHub Actions or GitLab CI.
 
 ## Principles
@@ -57,6 +59,7 @@ Architecture decision records in [`docs/adr/`](docs/adr/):
 | [0003](docs/adr/0003-operator-always-starts-an-investigation.md) | An Operator always starts an Investigation; alerts never do |
 | [0004](docs/adr/0004-agent-never-changes-production-directly.md) | The agent never changes production directly |
 | [0005](docs/adr/0005-provider-neutral-models.md) | Models are provider-neutral; nothing hard-depends on Claude |
+| [0006](docs/adr/0006-first-build-is-the-laptop-copy.md) | The first build is the laptop copy; the shared deployment comes after a demo |
 
 Every other decision is one line in the map's *Decisions so far*, linked to its ticket.
 
