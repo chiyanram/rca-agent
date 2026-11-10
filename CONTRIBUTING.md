@@ -66,9 +66,16 @@ pipx install pre-commit && pre-commit install --hook-type pre-commit --hook-type
 
 ## Releases
 
+```text
+merge to main          ──▶ ci.yml        checks only, no release
+Run workflow on main   ──▶ release.yml
+                             ├─ checks   ci.yml, called with workflow_call
+                             └─ release  python-semantic-release, only after the checks pass
+```
+
 Releases are manual during the dev phase (#48). A push to `main` does not release. To release, open **Actions → release → Run workflow** on `main`, or run `gh workflow run release.yml --ref main`. It runs the checks from `ci.yml` first (#53). [python-semantic-release](https://python-semantic-release.readthedocs.io/) then reads the commits since the last tag, picks the next version (`v0.x.y` while in planning), updates [`CHANGELOG.md`](CHANGELOG.md), tags and creates a GitHub release. The notes group changes under ⚠️ Breaking changes, ✨ Features, 🐛 Fixes, ⚡ Performance and ⏪ Reverts, the same sections as chiyanram/skills and chiyanram/agent-factory; other types ship nothing and are not listed. The templates are in `templates/`: the python-semantic-release defaults, with only `.components/changes.md.j2` changed.
 
-While the repo is in planning, almost every commit is `docs:`, so the version stays at `v0.1.x`. The PR-title check and `CODEOWNERS` only take effect once `main` is protected and changes go through pull requests; until then the commit-lint CI check on push is the gate.
+While the repo is in planning, almost every commit is `docs:`, so the version stays at `v0.1.x`. The PR-title check and `CODEOWNERS` only take effect once `main` is protected and changes go through pull requests; until then the `conventional-commits` job in `ci.yml`, on push to `main`, is the gate.
 
 ## Agent instruction files
 
