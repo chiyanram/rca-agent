@@ -1,0 +1,76 @@
+name: ci
+
+# The checks, in one file as in chiyanram/skills and agent-factory (#53). release.yml runs them first, then releases.
+# pull_request, not pull_request_target: the title check only reads the title, and every pull_request_target run here
+# ended in startup_failure (#51).
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  push:
+    branches: [main]
+  workflow_call:
+
+permissions:
+  contents: read
+
+# A newer push to the same pull request cancels the run still going. Runs on main are never cancelled. The event name
+# keeps the checks that release.yml calls out of the group of a push to main.
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  conventional-title:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      # One rule in chiyanram/skills, agent-factory and rca-agent (#48): a scope, a lower-case summary and the issue it
+      # works on, as (#N) or (owner/repo#N). Dependabot (scope deps) and the release commit name no issue. The title is
+      # read from the environment, never interpolated into the script.
+      - name: Title follows Conventional Commits
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|perf|revert|docs|style|refactor|test|build|ci|chore)\([a-z0-9-]+\)!?: [^A-Z].*\([^)]*#[0-9]+[^)]*\)'
+          exempt='^[a-z]+\(deps\): |^chore\(release\): '
+          if [[ ! "$TITLE" =~ $pattern && ! "$TITLE" =~ $exempt ]]; then
+            echo "::error::PR title \"$TITLE\" must be 'type(scope): lower-case summary (#issue)', e.g. 'feat(intake): accept a log bundle (#50)'. See CONTRIBUTING.md."
+            exit 1
+          fi
+
+  # Glossary and docs commits go straight to main, so the commits pushed there are checked too.
+  conventional-commits:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Check pushed commits follow Conventional Commits
+        env:
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          # The same rule as the PR title (#48): a scope, a lower-case summary and the issue. Dependabot (scope deps) and
+          # the release commit name no issue.
+          pattern='^(feat|fix|perf|revert|docs|style|refactor|test|build|ci|chore)\([a-z0-9-]+\)!?: [^A-Z].*\([^)]*#[0-9]+[^)]*\)'
+          exempt='^[a-z]+\(deps\): |^chore\(release\): '
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
+            range="$AFTER -1"
+          else
+            range="$BEFORE..$AFTER"
+          fi
+          bad=0
+          while IFS= read -r line; do
+            sha=${line%% *}; subject=${line#* }
+            case "$subject" in Merge\ *) continue;; esac
+            if ! printf '%s' "$subject" | grep -Eq "$pattern" && ! printf '%s' "$subject" | grep -Eq "$exempt"; then
+              echo "::error::$sha does not follow Conventional Commits: $subject"
+              bad=1
+            fi
+          done < <(git log --no-merges --format='%h %s' $range)
+          [ "$bad" -eq 0 ] && echo "All pushed commits follow Conventional Commits."
+          exit $bad

@@ -1,6 +1,7 @@
-name: Release
+name: release
 
-# Runs only from "Run workflow" on main: during the dev phase a merge does not release (#48).
+# Runs only from "Run workflow" on main (gh workflow run release.yml --ref main): during the dev phase a merge does not
+# release (#48). It runs the checks from ci.yml first, then releases (#53).
 on:
   workflow_dispatch:
 
@@ -8,7 +9,11 @@ permissions:
   contents: read
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: checks
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     concurrency:
