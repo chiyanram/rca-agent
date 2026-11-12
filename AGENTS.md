@@ -30,12 +30,14 @@ Root-cause-analysis agent for Java services on Azure: Operator starts an Investi
    - inputs posted on dependent open tickets;
    - new tickets created, attached to the map and wired with blocking edges;
    - settled terms in `CONTEXT.md`; a new standing rule in `docs/principles.md`; a hard-to-reverse decision as an ADR; the README "Key decisions" table and the principles tables updated when the decision changes them — all committed and pushed;
+   - when the decision works differently in v1: a row in `docs/releases.md` and a *v1:* note beside the rule it changes, in `docs/principles.md` or the ADR;
    - open items the user must act on (reviews, confirmations) recorded on a ticket, never left only in chat.
 
 ## Writing for the user
 
 - Name tickets by their linked title, never a bare number.
 - Use the `CONTEXT.md` terms exactly; a new concept gets a term there.
+- Say v1 (the laptop copy) and v2 (the shared deployment), never MVP.
 - Short sentences, tables for comparisons. The user's messages are often short and typo-heavy: read for intent.
 
 ## Boundaries
